@@ -1,0 +1,86 @@
+---
+title: "DSAN 5100 Student loans cleaning"
+author: "Jen Guo"
+format: 
+  html:
+    embed-resources: true
+    code-fold: true
+editor: visual
+toc: true
+---
+
+# Cleaning loan debts by age groups 
+
+```{r}
+library(dplyr)
+library(tidyverse)
+library(ggplot2)
+
+#load the loan age debt size data 
+age_debt <- read.csv("data/Loan-Portfolio-by-Age-Debt-Size.csv")
+
+#remove the first 5 lines due to header
+new_agedebt <- age_debt[-(1:4),]
+
+#remove the last 3 rows due to footnotes 
+new_agedebt <- new_agedebt %>%
+    filter(row_number() <= n()-3)
+
+#view data after removing unneeded rows 
+#new_agedebt
+```
+
+```{r}
+#rename column names due to age groups covering two fields each 
+agedebt_rename <- new_agedebt %>%
+    rename("24_or_Younger_Dollars_Outstanding_(in billions)" = "X",
+          "24_or_Younger_Borrowers_(in millions)" = "X.1",
+          "25_to_34_Dollars_Outstanding_(in billions)" = "X.2",
+          "25_to_34_Borrowers_(in millions)" = "X.3",
+          "35_to_49_Dollars_Outstanding_(in billions)" = "X.4",
+          "35_to_49_Borrowers_(in millions)" = "X.5",
+          "50_to_61_Dollars_Outstanding_(in billions)" = "X.6",
+          "50_to_61_Borrowers_(in millions)" = "X.7",
+          "62_and_Older_Dollars_Outstanding_(in billions)" = "X.8",
+          "62_and_Older_Borrowers_(in millions)" = "X.9",
+          "Debt_size" = "Federal.Student.Loan.Portfolio.by.Borrower.Age.and.Debt.Size")
+
+head(agedebt_rename)
+```
+
+```{r}
+#remove the first and second row due to redundant headers after renaming column 
+agedebt_rename2 <- agedebt_rename[-c(1,2),]
+head(agedebt_rename2)
+```
+
+```{r}
+#remove $ from columns 
+agedebt_remove <- agedebt_rename2 
+agedebt_remove$"24_or_Younger_Dollars_Outstanding_(in billions)" <- gsub("\\$", "", agedebt_remove$"24_or_Younger_Dollars_Outstanding_(in billions)")
+agedebt_remove$"25_to_34_Dollars_Outstanding_(in billions)" <- gsub("\\$", "", agedebt_remove$"25_to_34_Dollars_Outstanding_(in billions)")
+agedebt_remove$"35_to_49_Dollars_Outstanding_(in billions)" <- gsub("\\$", "", agedebt_remove$"35_to_49_Dollars_Outstanding_(in billions)")
+agedebt_remove$"50_to_61_Dollars_Outstanding_(in billions)" <- gsub("\\$", "", agedebt_remove$"50_to_61_Dollars_Outstanding_(in billions)")
+agedebt_remove$"62_and_Older_Dollars_Outstanding_(in billions)" <- gsub("\\$", "", agedebt_remove$"62_and_Older_Dollars_Outstanding_(in billions)")
+
+#convert columns into numeric 
+agedebt_remove$"24_or_Younger_Dollars_Outstanding_(in billions)" <- as.numeric(agedebt_remove$"24_or_Younger_Dollars_Outstanding_(in billions)")
+agedebt_remove$"25_to_34_Dollars_Outstanding_(in billions)" <- as.numeric(agedebt_remove$"25_to_34_Dollars_Outstanding_(in billions)")
+agedebt_remove$"35_to_49_Dollars_Outstanding_(in billions)" <- as.numeric(agedebt_remove$"35_to_49_Dollars_Outstanding_(in billions)")
+agedebt_remove$"50_to_61_Dollars_Outstanding_(in billions)" <- as.numeric(agedebt_remove$"35_to_49_Dollars_Outstanding_(in billions)")
+agedebt_remove$"62_and_Older_Dollars_Outstanding_(in billions)" <- as.numeric(agedebt_remove$"35_to_49_Dollars_Outstanding_(in billions)")
+
+agedebt_remove$"24_or_Younger_Borrowers_(in millions)" <- as.numeric(agedebt_remove$"24_or_Younger_Borrowers_(in millions)")
+agedebt_remove$"25_to_34_Borrowers_(in millions)" <- as.numeric(agedebt_remove$"25_to_34_Borrowers_(in millions)")
+agedebt_remove$"35_to_49_Borrowers_(in millions)" <- as.numeric(agedebt_remove$"35_to_49_Borrowers_(in millions)")
+agedebt_remove$"50_to_61_Borrowers_(in millions)" <- as.numeric(agedebt_remove$"35_to_49_Borrowers_(in millions)")
+agedebt_remove$"62_and_Older_Borrowers_(in millions)" <- as.numeric(agedebt_remove$"35_to_49_Borrowers_(in millions)")
+
+head(agedebt_remove)
+    
+```
+
+```{r}
+#export cleaned dataframe into csv file 
+write.csv(agedebt_remove, "Cleaned data/Cleaned_debt_by_age.csv")
+```
