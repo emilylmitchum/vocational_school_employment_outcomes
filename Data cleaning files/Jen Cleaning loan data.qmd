@@ -84,3 +84,345 @@ head(agedebt_remove)
 #export cleaned dataframe into csv file 
 write.csv(agedebt_remove, "Cleaned data/Cleaned_debt_by_age.csv")
 ```
+
+# Cleaning loan debts by location
+
+```{r}
+#load the loan debts by location data 
+debt_location <- read.csv("data/Portfolio-by-Location-by-Debt-Size.csv")
+
+#remove the first 5 lines due to header
+debt_location2 <- debt_location[-(1:5),]
+
+head(debt_location2)
+```
+
+```{r}
+#rename column names due to age groups covering two fields each 
+debt_location_rename <- debt_location2 %>%
+    rename("States" = "Federal.Student.Loan.Portfolio.by.Borrower.Location.and.Debt.Size",
+           "Less_than_5k_Dollars_Outstanding_(in billions)" = "X",
+           "Less_than_5k_Borrowers_(in thousands)" = "X.1",
+           "5k_to_10K_Dollars_Outstanding_(in billions)" = "X.2",
+           "5k_to_10k_Borrowers_(in thousands)" = "X.3",
+           "10k_to_20K_Dollars_Outstanding_(in billions)" = "X.4",
+           "10k_to_20k_Borrowers_(in thousands)" = "X.5",
+           "20k_to_40K_Dollars_Outstanding_(in billions)" = "X.6",
+           "20k_to_40k_Borrowers_(in thousands)" = "X.7",
+           "40k_to_60K_Dollars_Outstanding_(in billions)" = "X.8",
+           "40k_to_60k_Borrowers_(in thousands)" = "X.9",
+           "60k_to_80K_Dollars_Outstanding_(in billions)" = "X.10",
+           "60k_to_80k_Borrowers_(in thousands)" = "X.11",
+           "80k_to_100K_Dollars_Outstanding_(in billions)" = "X.12",
+           "80k_to_100k_Borrowers_(in thousands)" = "X.13",
+           "100k_to_200K_Dollars_Outstanding_(in billions)" = "X.14",
+           "100k_to_200k_Borrowers_(in thousands)" = "X.15",
+           "200K_plus_Dollars_Outstanding_(in billions)" = "X.16",
+           "200k_plus_Borrowers_(in thousands)" = "X.17")
+
+head(debt_location_rename)
+```
+
+```{r}
+#remove the first row and column x.18 because of renamed columns 
+debt_location_drop <- debt_location_rename[-c(1),]
+debt_location_drop  <- debt_location_drop [,-ncol(debt_location_drop)]
+#head(debt_location_drop)
+```
+
+```{r}
+#remove the $ from columns 
+debt_location_remove <- debt_location_drop
+
+debt_location_remove$"Less_than_5k_Dollars_Outstanding_(in billions)" <- gsub("\\$", "",debt_location_remove$"Less_than_5k_Dollars_Outstanding_(in billions)")
+debt_location_remove$"5k_to_10K_Dollars_Outstanding_(in billions)" <- gsub("\\$", "",debt_location_remove$"5k_to_10K_Dollars_Outstanding_(in billions)")
+debt_location_remove$"10k_to_20K_Dollars_Outstanding_(in billions)" <- gsub("\\$", "",debt_location_remove$"10k_to_20K_Dollars_Outstanding_(in billions)")
+debt_location_remove$"20k_to_40K_Dollars_Outstanding_(in billions)" <- gsub("\\$", "",debt_location_remove$"20k_to_40K_Dollars_Outstanding_(in billions)")
+debt_location_remove$"40k_to_60K_Dollars_Outstanding_(in billions)" <- gsub("\\$", "",debt_location_remove$"40k_to_60K_Dollars_Outstanding_(in billions)")
+debt_location_remove$"60k_to_80K_Dollars_Outstanding_(in billions)" <- gsub("\\$", "",debt_location_remove$"60k_to_80K_Dollars_Outstanding_(in billions)")
+debt_location_remove$"80k_to_100K_Dollars_Outstanding_(in billions)" <- gsub("\\$", "",debt_location_remove$"80k_to_100K_Dollars_Outstanding_(in billions)")
+debt_location_remove$"100k_to_200K_Dollars_Outstanding_(in billions)" <- gsub("\\$", "",debt_location_remove$"100k_to_200K_Dollars_Outstanding_(in billions)")
+debt_location_remove$"200K_plus_Dollars_Outstanding_(in billions)" <- gsub("\\$", "",debt_location_remove$"200K_plus_Dollars_Outstanding_(in billions)")
+
+#head(debt_location_remove)
+```
+
+```{r}
+#convert columns into numeric 
+debt_location_remove$"Less_than_5k_Dollars_Outstanding_(in billions)" <- as.numeric(debt_location_remove$"Less_than_5k_Dollars_Outstanding_(in billions)")
+debt_location_remove$"5k_to_10K_Dollars_Outstanding_(in billions)" <- as.numeric(debt_location_remove$"5k_to_10K_Dollars_Outstanding_(in billions)")
+debt_location_remove$"10k_to_20K_Dollars_Outstanding_(in billions)" <- as.numeric(debt_location_remove$"10k_to_20K_Dollars_Outstanding_(in billions)")
+debt_location_remove$"20k_to_40K_Dollars_Outstanding_(in billions)" <- as.numeric(debt_location_remove$"20k_to_40K_Dollars_Outstanding_(in billions)")
+debt_location_remove$"40k_to_60K_Dollars_Outstanding_(in billions)" <- as.numeric(debt_location_remove$"40k_to_60K_Dollars_Outstanding_(in billions)")
+debt_location_remove$"60k_to_80K_Dollars_Outstanding_(in billions)" <- as.numeric(debt_location_remove$"60k_to_80K_Dollars_Outstanding_(in billions)")
+debt_location_remove$"80k_to_100K_Dollars_Outstanding_(in billions)" <- as.numeric(debt_location_remove$"80k_to_100K_Dollars_Outstanding_(in billions)")
+debt_location_remove$"100k_to_200K_Dollars_Outstanding_(in billions)" <- as.numeric(debt_location_remove$"100k_to_200K_Dollars_Outstanding_(in billions)")
+debt_location_remove$"200K_plus_Dollars_Outstanding_(in billions)" <- as.numeric(debt_location_remove$"200K_plus_Dollars_Outstanding_(in billions)")
+
+debt_location_remove$"Less_than_5k_Borrowers_(in thousands)" <- as.numeric(as.character(debt_location_remove$"Less_than_5k_Borrowers_(in thousands)"))
+debt_location_remove$"5k_to_10k_Borrowers_(in thousands)" <- as.numeric(debt_location_remove$"5k_to_10k_Borrowers_(in thousands)")
+                                                                        
+debt_location_remove$"10k_to_20k_Borrowers_(in thousands)" <- as.numeric(debt_location_remove$"10k_to_20k_Borrowers_(in thousands)")
+debt_location_remove$"20k_to_40k_Borrowers_(in thousands)" <- as.numeric(debt_location_remove$"20k_to_40k_Borrowers_(in thousands)")
+debt_location_remove$"40k_to_60k_Borrowers_(in thousands)" <- as.numeric(debt_location_remove$"40k_to_60k_Borrowers_(in thousands)")
+debt_location_remove$"60k_to_80k_Borrowers_(in thousands)" <- as.numeric(debt_location_remove$"60k_to_80k_Borrowers_(in thousands)")
+debt_location_remove$"80k_to_100k_Borrowers_(in thousands)" <- as.numeric(debt_location_remove$"80k_to_100k_Borrowers_(in thousands)")
+debt_location_remove$"100k_to_200k_Borrowers_(in thousands)" <- as.numeric(debt_location_remove$"100k_to_200k_Borrowers_(in thousands)")
+debt_location_remove$"200k_plus_Borrowers_(in thousands)" <- as.numeric(debt_location_remove$"200k_plus_Borrowers_(in thousands)")
+
+str(debt_location_remove)
+```
+
+```{r}
+#export cleaned dataframe into csv file 
+write.csv(debt_location_remove, "Cleaned data/Cleaned_debt_by_location.csv")
+```
+
+# Cleaning debt size by year 
+
+```{r}
+#load the debt size by year data 
+debts_year <- read.csv("data/Portfolio by Debt Size-Table 1.csv")
+
+#remove the first 3 rows due to header 
+debts_year2 <- debts_year[-(1:3),]
+
+#drop the last two columns due to NA 
+debts_year2 <- debts_year2 %>%
+    select(1:(ncol(debts_year2)-2))
+
+#head(debts_year2)
+```
+
+```{r}
+debts_year_rename <- debts_year2 %>%
+    rename("Year" = "Federal.Student.Loan.Portfolio.by.Borrower.Debt.Size",
+           "Quarter" = "X",
+           "Less_than_5k_Dollars_Outstanding_(in billions)" = "X.1",
+           "Less_than_5k_Borrowers_(in thousands)" = "X.2",
+           "5k_to_10K_Dollars_Outstanding_(in billions)" = "X.3",
+           "5k_to_10k_Borrowers_(in thousands)" = "X.4",
+           "10k_to_20K_Dollars_Outstanding_(in billions)" = "X.5",
+           "10k_to_20k_Borrowers_(in thousands)" = "X.6",
+           "20k_to_40K_Dollars_Outstanding_(in billions)" = "X.7",
+           "20k_to_40k_Borrowers_(in thousands)" = "X.8",
+           "40k_to_60K_Dollars_Outstanding_(in billions)" = "X.9",
+           "40k_to_60k_Borrowers_(in thousands)" = "X.10",
+           "60k_to_80K_Dollars_Outstanding_(in billions)" = "X.11",
+           "60k_to_80k_Borrowers_(in thousands)" = "X.12",
+           "80k_to_100K_Dollars_Outstanding_(in billions)" = "X.13",
+           "80k_to_100k_Borrowers_(in thousands)" = "X.14",
+           "100k_to_200K_Dollars_Outstanding_(in billions)" = "X.15",
+           "100k_to_200k_Borrowers_(in thousands)" = "X.16",
+           "200K_plus_Dollars_Outstanding_(in billions)" = "X.17",
+           "200k_plus_Borrowers_(in thousands)" = "X.18")
+#head(debts_year_rename)
+```
+
+```{r}
+#remove the first and second row because of renamed columns 
+debts_year_drop <- debts_year_rename[-c(1,2),]
+#head(debts_year_drop)
+```
+
+```{r}
+#remove the $ from columns 
+debts_year_remove <- debts_year_drop
+
+debts_year_remove$"Less_than_5k_Dollars_Outstanding_(in billions)" <- gsub("\\$", "",debts_year_remove$"Less_than_5k_Dollars_Outstanding_(in billions)")
+debts_year_remove$"5k_to_10K_Dollars_Outstanding_(in billions)" <- gsub("\\$", "",debts_year_remove$"5k_to_10K_Dollars_Outstanding_(in billions)")
+debts_year_remove$"10k_to_20K_Dollars_Outstanding_(in billions)" <- gsub("\\$", "",debts_year_remove$"10k_to_20K_Dollars_Outstanding_(in billions)")
+debts_year_remove$"20k_to_40K_Dollars_Outstanding_(in billions)" <- gsub("\\$", "",debts_year_remove$"20k_to_40K_Dollars_Outstanding_(in billions)")
+debts_year_remove$"40k_to_60K_Dollars_Outstanding_(in billions)" <- gsub("\\$", "",debts_year_remove$"40k_to_60K_Dollars_Outstanding_(in billions)")
+debts_year_remove$"60k_to_80K_Dollars_Outstanding_(in billions)" <- gsub("\\$", "",debts_year_remove$"60k_to_80K_Dollars_Outstanding_(in billions)")
+debts_year_remove$"80k_to_100K_Dollars_Outstanding_(in billions)" <- gsub("\\$", "",debts_year_remove$"80k_to_100K_Dollars_Outstanding_(in billions)")
+debts_year_remove$"100k_to_200K_Dollars_Outstanding_(in billions)" <- gsub("\\$", "",debts_year_remove$"100k_to_200K_Dollars_Outstanding_(in billions)")
+debts_year_remove$"200K_plus_Dollars_Outstanding_(in billions)" <- gsub("\\$", "",debts_year_remove$"200K_plus_Dollars_Outstanding_(in billions)")
+
+head(debts_year_remove)
+```
+
+```{r}
+#convert columns into numeric 
+debts_year_remove$"Less_than_5k_Dollars_Outstanding_(in billions)" <- as.numeric(debts_year_remove$"Less_than_5k_Dollars_Outstanding_(in billions)")
+debts_year_remove$"5k_to_10K_Dollars_Outstanding_(in billions)" <- as.numeric(debts_year_remove$"5k_to_10K_Dollars_Outstanding_(in billions)")
+debts_year_remove$"10k_to_20K_Dollars_Outstanding_(in billions)" <- as.numeric(debts_year_remove$"10k_to_20K_Dollars_Outstanding_(in billions)")
+debts_year_remove$"20k_to_40K_Dollars_Outstanding_(in billions)" <- as.numeric(debts_year_remove$"20k_to_40K_Dollars_Outstanding_(in billions)")
+debts_year_remove$"40k_to_60K_Dollars_Outstanding_(in billions)" <- as.numeric(debts_year_remove$"40k_to_60K_Dollars_Outstanding_(in billions)")
+debts_year_remove$"60k_to_80K_Dollars_Outstanding_(in billions)" <- as.numeric(debts_year_remove$"60k_to_80K_Dollars_Outstanding_(in billions)")
+debts_year_remove$"80k_to_100K_Dollars_Outstanding_(in billions)" <- as.numeric(debts_year_remove$"80k_to_100K_Dollars_Outstanding_(in billions)")
+debts_year_remove$"100k_to_200K_Dollars_Outstanding_(in billions)" <- as.numeric(debts_year_remove$"100k_to_200K_Dollars_Outstanding_(in billions)")
+debts_year_remove$"200K_plus_Dollars_Outstanding_(in billions)" <- as.numeric(debts_year_remove$"200K_plus_Dollars_Outstanding_(in billions)")
+
+debts_year_remove$"Less_than_5k_Borrowers_(in thousands)" <- as.numeric(as.character(debts_year_remove$"Less_than_5k_Borrowers_(in thousands)"))
+debts_year_remove$"5k_to_10k_Borrowers_(in thousands)" <- as.numeric(debts_year_remove$"5k_to_10k_Borrowers_(in thousands)")
+                                                                        
+debts_year_remove$"10k_to_20k_Borrowers_(in thousands)" <- as.numeric(debts_year_remove$"10k_to_20k_Borrowers_(in thousands)")
+debts_year_remove$"20k_to_40k_Borrowers_(in thousands)" <- as.numeric(debts_year_remove$"20k_to_40k_Borrowers_(in thousands)")
+debts_year_remove$"40k_to_60k_Borrowers_(in thousands)" <- as.numeric(debts_year_remove$"40k_to_60k_Borrowers_(in thousands)")
+debts_year_remove$"60k_to_80k_Borrowers_(in thousands)" <- as.numeric(debts_year_remove$"60k_to_80k_Borrowers_(in thousands)")
+debts_year_remove$"80k_to_100k_Borrowers_(in thousands)" <- as.numeric(debts_year_remove$"80k_to_100k_Borrowers_(in thousands)")
+debts_year_remove$"100k_to_200k_Borrowers_(in thousands)" <- as.numeric(debts_year_remove$"100k_to_200k_Borrowers_(in thousands)")
+debts_year_remove$"200k_plus_Borrowers_(in thousands)" <- as.numeric(debts_year_remove$"200k_plus_Borrowers_(in thousands)")
+
+debts_year_remove$Year <- as.Date(debts_year_remove$Year)
+
+str(debts_year_remove)
+```
+
+# Cleaning loan type by year
+
+```{r}
+#load the loan type data 
+loan_year <- read.csv("data/PortfoliobyLoanType.csv")
+
+#remove the first 4 rows due to header 
+loan_year2 <- loan_year[-(1:4),]
+
+#drop the last five columns due to NA 
+loan_year2 <- loan_year2 %>%
+    select(1:(ncol(loan_year2)-5))
+
+head(loan_year2)
+```
+
+```{r}
+loan_year_rename <- loan_year2 %>%
+    rename("Year" = "Portfolio.by.Loan.Type",
+           "Quarter" = "X",
+           "Stafford_Subsidized_Dollars_Outstanding_(in billions)" = "X.1",
+           "Stafford_Subsidized_Recipients_(in millions)" = "X.2",
+           "Stafford_Unsubsidized_Dollars_Outstanding_(in billions)" = "X.3",
+           "Stafford_Unsubsidized_Recipients_(in millions)" = "X.4",
+           "Stafford_(Combined)_Dollars_Outstanding_(in billions)" = "X.5",
+           "Stafford_(Combined)_Unique_Recipients_(in millions)" = "X.6",
+           "Grad_PLUS_Dollars_Outstanding_(in billions)" = "X.7",
+           "Grad_PLUS_Recipients_(in millions)" = "X.8",
+           "Parent_PLUS_Dollars_Outstanding_(in billions)" = "X.9",
+           "Parent_PLUS_Recipients_(in millions)" = "X.10",
+           "Perkins_Dollars_Outstanding_(in billions)" = "X.11",
+           "Perkins_Recipients_(in millions)" = "X.12",
+           "Consolidation_Dollars_Outstanding_(in billions)" = "X.13",
+           "Consolidation_Recipients_(in millions)" = "X.14")
+#head(loan_year_rename)
+```
+
+```{r}
+#remove the first and second row because of renamed columns 
+loan_year_drop <- loan_year_rename[-c(1,2),]
+#head(loan_year_drop)
+```
+
+```{r}
+#remove the $ from columns 
+loan_year_remove <- loan_year_drop
+
+loan_year_remove$"Stafford_Subsidized_Dollars_Outstanding_(in billions)" <- gsub("\\$", "", loan_year_remove$"Stafford_Subsidized_Dollars_Outstanding_(in billions)")
+loan_year_remove$"Stafford_Unsubsidized_Dollars_Outstanding_(in billions)" <- gsub("\\$", "",loan_year_remove$"Stafford_Unsubsidized_Dollars_Outstanding_(in billions)")
+loan_year_remove$"Stafford_(Combined)_Dollars_Outstanding_(in billions)" <- gsub("\\$", "", loan_year_remove$"Stafford_(Combined)_Dollars_Outstanding_(in billions)")
+loan_year_remove$"Grad_PLUS_Dollars_Outstanding_(in billions)" <- gsub("\\$", "", loan_year_remove$"Grad_PLUS_Dollars_Outstanding_(in billions)")
+loan_year_remove$"Parent_PLUS_Dollars_Outstanding_(in billions)" <- gsub("\\$", "", loan_year_remove$"Parent_PLUS_Dollars_Outstanding_(in billions)")
+loan_year_remove$"Perkins_Dollars_Outstanding_(in billions)" <- gsub("\\$", "", loan_year_remove$"Perkins_Dollars_Outstanding_(in billions)")
+loan_year_remove$"Consolidation_Dollars_Outstanding_(in billions)" <- gsub("\\$", "", loan_year_remove$"Consolidation_Dollars_Outstanding_(in billions)")
+
+#head(loan_year_remove)
+```
+
+```{r}
+#transform into numeric data type 
+loan_year_remove$"Stafford_Subsidized_Dollars_Outstanding_(in billions)" <- as.numeric(loan_year_remove$"Stafford_Subsidized_Dollars_Outstanding_(in billions)")
+loan_year_remove$"Stafford_Unsubsidized_Dollars_Outstanding_(in billions)" <- as.numeric(loan_year_remove$"Stafford_Unsubsidized_Dollars_Outstanding_(in billions)")
+loan_year_remove$"Stafford_(Combined)_Dollars_Outstanding_(in billions)" <-as.numeric(loan_year_remove$"Stafford_(Combined)_Dollars_Outstanding_(in billions)")
+
+loan_year_remove$"Grad_PLUS_Dollars_Outstanding_(in billions)" <- as.numeric(loan_year_remove$"Grad_PLUS_Dollars_Outstanding_(in billions)")
+
+loan_year_remove$"Parent_PLUS_Dollars_Outstanding_(in billions)" <- as.numeric(loan_year_remove$"Parent_PLUS_Dollars_Outstanding_(in billions)")
+
+loan_year_remove$"Perkins_Dollars_Outstanding_(in billions)" <- as.numeric(loan_year_remove$"Perkins_Dollars_Outstanding_(in billions)")
+
+loan_year_remove$"Consolidation_Dollars_Outstanding_(in billions)" <- as.numeric(loan_year_remove$"Consolidation_Dollars_Outstanding_(in billions)")
+
+loan_year_remove$"Stafford_Subsidized_Recipients_(in millions)" <- as.numeric(loan_year_remove$"Stafford_Subsidized_Recipients_(in millions)")
+                                                                         
+loan_year_remove$"Stafford_Unsubsidized_Recipients_(in millions)" <-as.numeric(loan_year_remove$"Stafford_Unsubsidized_Recipients_(in millions)")
+
+                                                                              loan_year_remove$"Stafford_(Combined)_Unique_Recipients_(in millions)" <- as.numeric(loan_year_remove$"Stafford_(Combined)_Unique_Recipients_(in millions)")
+
+loan_year_remove$"Grad_PLUS_Recipients_(in millions)" <- as.numeric(loan_year_remove$"Grad_PLUS_Recipients_(in millions)") 
+
+loan_year_remove$"Parent_PLUS_Recipients_(in millions)" <- as.numeric(loan_year_remove$"Parent_PLUS_Recipients_(in millions)")
+
+loan_year_remove$"Perkins_Recipients_(in millions)" <- as.numeric(loan_year_remove$"Perkins_Recipients_(in millions)")
+
+loan_year_remove$"Consolidation_Recipients_(in millions)" <- as.numeric(loan_year_remove$"Consolidation_Recipients_(in millions)") 
+
+str(loan_year_remove)                                                                           
+```
+
+```{r}
+#join the debt by year and loan type by year datasets on Year column 
+loantype_debt_year <- inner_join(debts_year_remove, loan_year_remove, by = c("Year", "Quarter"))
+head(loantype_debt_year)
+```
+
+```{r}
+#export joined dataframes into csv 
+write.csv(loantype_debt_year, "Cleaned data/Cleaned_debt_loantype_year.csv")
+```
+
+# Cleaning non-payment rates school types
+
+```{r}
+#load the nonpayment rate school type data 
+nonpayment_schools <- read.csv("data/nonpayment-rates-School-Level Nonpayment Rates.csv")
+
+#head(nonpayment_schools)
+```
+
+```{r}
+#rename column names 
+nonpayment_schools_rename <- nonpayment_schools %>%
+    rename("OPE_ID" = "Nonpayment.Rates.by.Institution",
+          "School_Name" = "X",
+          "School_Type" = "X.1",
+          "State" = "X.2",
+          "Total_Borrowers_Evaluated" = "X.3",
+           "Nonpayment_Rate" = "X.4")
+#head(nonpayment_schools_rename)
+```
+
+```{r}
+#remove the first two rows due to renamed headers 
+nonpayment_schools_drop <- nonpayment_schools_rename[-c(1,2),]
+#head(nonpayment_schools_drop)
+```
+
+```{r}
+#remove comma from school type column 
+nonpayment_schools_clean <- nonpayment_schools_drop
+nonpayment_schools_clean$"School_Type" <- gsub("\\,", "", nonpayment_schools_clean$"School_Type")
+#head(nonpayment_schools_clean$"School Type")
+
+#remove % from Nonpayment Rate column 
+nonpayment_schools_clean$"Nonpayment_Rate" <- gsub("\\%", "", nonpayment_schools_clean$"Nonpayment_Rate")
+head(nonpayment_schools_clean$"Nonpayment_Rate")
+```
+
+```{r}
+#transform necessary columns in to numeric 
+#str(nonpayment_schools_clean)
+nonpayment_schools_clean$"Total_Borrowers_Evaluated" <- as.numeric(nonpayment_schools_clean$"Total_Borrowers_Evaluated")
+nonpayment_schools_clean$"Nonpayment_Rate" <- as.numeric(nonpayment_schools_clean$"Nonpayment_Rate")
+str(nonpayment_schools_clean)
+
+#transform nonpayment rate column into percentage
+nonpayment_schools_clean2 <- nonpayment_schools_clean %>%
+    mutate(Nonpayment_Rate = Nonpayment_Rate/100)
+
+head(nonpayment_schools_clean2$Nonpayment_Rate)
+```
+
+```{r}
+#export cleaned data into csv file 
+write.csv(nonpayment_schools_clean2, "Cleaned data/Cleaned_nonpayment_schools.csv")
+```
