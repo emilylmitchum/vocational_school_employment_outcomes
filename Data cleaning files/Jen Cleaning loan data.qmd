@@ -9,7 +9,7 @@ editor: visual
 toc: true
 ---
 
-# Cleaning loan debts by age groups 
+# Cleaning loan debts by age groups
 
 ```{r}
 library(dplyr)
@@ -178,7 +178,7 @@ str(debt_location_remove)
 write.csv(debt_location_remove, "Cleaned data/Cleaned_debt_by_location.csv")
 ```
 
-# Cleaning debt size by year 
+# Cleaning debt size by year
 
 ```{r}
 #load the debt size by year data 
