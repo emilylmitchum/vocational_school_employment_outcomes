@@ -1,0 +1,56 @@
+# Clean IPEDS Data - Gender and Ethnicity
+
+```{python}
+
+# Import required Python packages
+import pandas as pd
+import numpy as np
+import os
+
+# Read data
+state_gender = pd.read_csv("../data/IPEDS_DegreesByStateAndGender.csv")
+state_ethnicity = pd.read_csv("../data/IPEDS_DegreesByStateAndEthnicity.csv")
+state_degree_type = pd.read_csv("../data/IPEDS_DegreesByStateAndDegreeType.csv")
+
+# Combine dataframes together on year and state
+ipeds_demographic_data = state_degree_type.set_index(["Completion Year", "State"]).join(state_ethnicity.set_index(["Completion Year", "State"]), how="left", rsuffix="_r")
+ipeds_demographic_data = ipeds_demographic_data.join(state_gender.set_index(["Completion Year", "State"]), how="left", rsuffix="_r")
+
+# Drop total_r
+ipeds_demographic_data = ipeds_demographic_data.drop(columns=["Total_r"])
+
+# Clean column names: " " -> "_"
+ipeds_demographic_data.columns = ipeds_demographic_data.columns.str.replace(" ", "_")
+
+print(ipeds_demographic_data.head())
+
+# Export cleanded DataFrame
+ipeds_demographic_data.to_csv(f"../Cleaned data/Cleaned_ipeds_state_demographics.csv")
+
+```
+
+Exploratory Analysis
+
+```{r}
+
+library(ggplot2)
+
+# Read data
+ipeds_demographic_data <- read.csv("../Cleaned data/Cleaned_ipeds_state_demographics.csv")
+
+# Replace . with _ in column labels
+names(ipeds_demographic_data) <- gsub("\.", "_", names(ipeds_demographic_data))
+
+# N/A Values by column
+summary(ipeds_demographic_data)
+
+# Box plot: degree distribution by race/ethnicity
+(MyL1<-ggplot(ipeds_demographic_data, aes(x=Completion_Year, y=Total,fill=State))+
+    geom_boxplot()+
+    geom_jitter(position=position_jitter(.01), aes(color=Completion_Year))+
+  ggtitle("Degrees granted by year"))
+
+
+
+
+```
