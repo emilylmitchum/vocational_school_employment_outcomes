@@ -122,9 +122,19 @@ ipeds_demographic_data = ipeds_demographic_data.drop(ipeds_demographic_data.filt
 # Create a copy of just 2024 data (the most recent year) for EDA
 ipeds_demographic_data_2024 = ipeds_demographic_data[ipeds_demographic_data["year"] == 2024]
 
+# Create a copy of all the years filtered for undergraduate total enrollment (non-trade school) and total trade school enrollment (trade schools)
+
+# Create a copy of 2020-2022 (file limits)
+ipeds_demographic_data_2020_2022 = ipeds_demographic_data[(ipeds_demographic_data["year"] == "2020") | (ipeds_demographic_data["year"] == "2021") | (ipeds_demographic_data["year"] == "2022")]
+
+# Create a copy of 2023-2024 (file limits)
+ipeds_demographic_data_2023_2024 = ipeds_demographic_data[(ipeds_demographic_data["year"] == "2023") | (ipeds_demographic_data["year"] == "2024")]
+
 # Export all cleaned data to csv
-ipeds_demographic_data.to_csv(f"../Cleaned data/Cleaned_ipeds_state_demographics.csv", index=False)
-ipeds_demographic_data_2024.to_csv(f"../Cleaned data/Cleaned_ipeds_state_demographics_2024.csv", index=False)
+#ipeds_demographic_data.to_csv(f"../Cleaned data/Cleaned_ipeds_state_demographics.csv", index=False)
+ipeds_demographic_data_2020_2022.to_csv(f"../Cleaned data/Cleaned_ipeds_state_demographics_2020_2022.csv", index=False)
+ipeds_demographic_data_2023_2024.to_csv(f"../Cleaned data/Cleaned_ipeds_state_demographics_2023_2024.csv", index=False)
+# ipeds_demographic_data_2024.to_csv(f"../Cleaned data/Cleaned_ipeds_state_demographics_2024.csv", index=False)
 
 ```
 # Transform IPEDS demographic data - state-level groups
