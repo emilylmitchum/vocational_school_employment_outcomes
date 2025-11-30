@@ -1,3 +1,15 @@
+---
+title: "DSAN 5100 IPEDS Data Cleaning"
+author: "Taylor McDermott"
+format: 
+  html:
+    embed-resources: true
+    code-fold: true
+editor: visual
+toc: true
+jupyter: python3
+---
+
 # Clean IPEDS Data - Gender and Ethnicity
 
 ```{python}
@@ -6,30 +18,124 @@
 import pandas as pd
 import numpy as np
 import os
+import openpyxl
 
 # Read data
-state_gender = pd.read_csv("../data/IPEDS_DegreesByStateAndGender.csv")
-state_ethnicity = pd.read_csv("../data/IPEDS_DegreesByStateAndEthnicity.csv")
-state_degree_type = pd.read_csv("../data/IPEDS_DegreesByStateAndDegreeType.csv")
+enrollment_2024 = pd.read_csv("../data/ipeds_demographics/EFFY2024.csv")
+enrollment_2023 = pd.read_csv("../data/ipeds_demographics/EFFY2023.csv")
+enrollment_2022 = pd.read_csv("../data/ipeds_demographics/EFFY2022.csv")
+enrollment_2021 = pd.read_csv("../data/ipeds_demographics/EFFY2021.csv")
+enrollment_2020 = pd.read_csv("../data/ipeds_demographics/EFFY2020.csv")
 
-# Combine dataframes together on year and state
-ipeds_demographic_data = state_degree_type.set_index(["Completion Year", "State"]).join(state_ethnicity.set_index(["Completion Year", "State"]), how="left", rsuffix="_r")
-ipeds_demographic_data = ipeds_demographic_data.join(state_gender.set_index(["Completion Year", "State"]), how="left", rsuffix="_r")
+enrollment_col_dict = pd.read_excel("../data/ipeds_demographics/EFFY2024_dict.xlsx", sheet_name="Varlist")
+student_degree_type = pd.read_excel("../data/ipeds_demographics/EFFY2024_dict.xlsx", sheet_name="Frequencies")
+institution_characteristics = pd.read_csv("../data/ipeds_demographics/HD2024.csv")
+state_names = pd.read_csv("../data/ipeds_demographics/data-map-state-abbreviations.csv")
+# Trade school list - Varshini data
+trade_school_list = pd.read_csv("../data/institutional_characteristics/2024-certificates/CSV_11192025-624.csv")
 
-# Drop total_r
-ipeds_demographic_data = ipeds_demographic_data.drop(columns=["Total_r"])
+# Create a dictionary with the enrollment dataframes by year
+enrollment_dfs = {"2024": enrollment_2024,
+                  "2023": enrollment_2023,
+                  "2022": enrollment_2022,
+                  "2021": enrollment_2021,
+                  "2020": enrollment_2020
+}
 
-# Clean column names: " " -> "_"
-ipeds_demographic_data.columns = ipeds_demographic_data.columns.str.replace(" ", "_")
+# Create two dictionaries to map degree type and institution type
+  # Ex: 2 = Undergraduate, 11 = Non-degree/certificate-seeking
+effylev_map = student_degree_type[student_degree_type["VarName"] == "EFFYLEV"]
+effylev_map = effylev_map[["CodeValue", "ValueLabel"]]
+effylev_map = effylev_map.set_index("CodeValue")["ValueLabel"].to_dict()
 
-print(ipeds_demographic_data.head())
+effyalev_map = student_degree_type[student_degree_type["VarName"] == "EFFYALEV"]
+effyalev_map = effyalev_map[["CodeValue", "ValueLabel"]]
+effyalev_map = effyalev_map.set_index("CodeValue")["ValueLabel"].to_dict()
 
-# Export cleanded DataFrame
-ipeds_demographic_data.to_csv(f"../Cleaned data/Cleaned_ipeds_state_demographics.csv")
+# Create a dictionary from the "varName" and "varTitle" columns enrollment_dict
+enrollment_col_dict = enrollment_col_dict[["varName", "varTitle"]]
+col_rename_dict = enrollment_col_dict.set_index("varName")["varTitle"].to_dict()
+
+# Prep institution information enrichment: state names
+state_names = state_names.set_index("abbreviation")["state"].to_dict()
+institution_characteristics["state_fips_code"] = institution_characteristics["state"].copy() 
+institution_characteristics["state"] = institution_characteristics["state"].map(state_names)
+
+# Pull institutional characteristics that would be helpful to include in this table
+institution_characteristics.columns = institution_characteristics.columns.str.strip()
+institution_characteristics["unitid"] = institution_characteristics["unitid"].astype(int)
+
+# Create a trade school key to join during analysis
+trade_school_list = trade_school_list[["unitid", "HD2024.Degree-granting status", "HD2024.Institutional category"]]
+
+# Create an empty dataframe to combine all the demographics data
+ipeds_demographic_data = pd.DataFrame()
+
+'''
+Remap the following:
+- Degree type codes to human-understandable degree type values
+- Shortened column names to human-understandable demographics categories
+- Get UNITID info from institutional characteristics
+'''
+for year, df in enrollment_dfs.items():
+
+  df["year"] = year
+
+  # Map the full value names
+  df["EFFYLEV"] = df["EFFYLEV"].map(effylev_map)
+  df["EFFYALEV"] = df["EFFYALEV"].map(effyalev_map)
+
+  # Rename columns
+  df.rename(columns=col_rename_dict, inplace=True)
+
+  # Rename institution ID back to UNITID for consistency
+  df.rename(columns={"Unique identification number of the institution": "unitid"}, inplace=True)
+  pd.set_option('display.max_columns', None)
+
+  # Make sure columns match before concat
+  df.columns = df.columns.str.strip()
+  df["unitid"] = df["unitid"].astype(int)
+
+  # Combine institution characteristics with demographic data
+  df = df.set_index("unitid").join(institution_characteristics.set_index("unitid"))
+  df = df.reset_index()
+  # Add trade school check information based on the institution type
+  df = df.set_index("unitid").join(trade_school_list.set_index("unitid"))
+  df = df.reset_index() 
+  df["trade_school_check"] =  np.where(df["HD2024.Degree-granting status"] == "Nondegree-granting, primarily postsecondary", True, False)
+  # Reorder columns for clarity
+  cols_to_move = ["year", "institution_name", "trade_school_check", "state", "state_fips_code"]
+  target = "Undergraduate or graduate level of student"
+  # Pop the columns
+  popped = [df.pop(c) for c in cols_to_move]
+  # Insert after the target column
+  insert_at = df.columns.get_loc(target) + 1
+  for i, c in enumerate(cols_to_move):
+      df.insert(insert_at + i, c, popped[i])
+
+  # Combine the current year with the prior years
+  ipeds_demographic_data = pd.concat([ipeds_demographic_data, df])
+
+# Filter for the most relevant columns (drop imputation type values)
+ipeds_demographic_data = ipeds_demographic_data.drop(ipeds_demographic_data.filter(regex=r"^(XEY|XEFY)").columns, axis=1)
+
+# Create a copy of just 2024 data (the most recent year) for EDA
+ipeds_demographic_data_2024 = ipeds_demographic_data[ipeds_demographic_data["year"] == 2024]
+
+# Export all cleaned data to csv
+ipeds_demographic_data.to_csv(f"../Cleaned data/Cleaned_ipeds_state_demographics.csv", index=False)
+ipeds_demographic_data_2024.to_csv(f"../Cleaned data/Cleaned_ipeds_state_demographics_2024.csv", index=False)
+
+```
+# Transform IPEDS demographic data - state-level groups
+```{python}
+
+# Group by state and by year, using “All Students Total” in column “Level and degree/certificate-seeking status of student” for trade schools and "Undergraduate total" for non-trade schools to avoid duplicating counts across trade school and 4-year programs
+#ipeds_demographic_data = ipeds_demographic_data.
 
 ```
 
-Exploratory Analysis
+Exploratory Analysis and Visualization
 
 ```{r}
 
@@ -37,20 +143,24 @@ library(ggplot2)
 
 # Read data
 ipeds_demographic_data <- read.csv("../Cleaned data/Cleaned_ipeds_state_demographics.csv")
+ipeds_demographic_data_2024 <- read.csv("../Cleaned data/Cleaned_ipeds_state_demographics_2024.csv")
 
 # Replace . with _ in column labels
 names(ipeds_demographic_data) <- gsub("\.", "_", names(ipeds_demographic_data))
+names(ipeds_demographic_data_2024) <- gsub("\.", "_", names(ipeds_demographic_data))
+
+## 2024 Demographic Data ##
 
 # N/A Values by column
-summary(ipeds_demographic_data)
+summary(ipeds_demographic_data_2024)
 
 # Box plot: degree distribution by race/ethnicity
-(MyL1<-ggplot(ipeds_demographic_data, aes(x=Completion_Year, y=Total,fill=State))+
+(MyL1<-ggplot(ipeds_demographic_data_2024, aes(x=Completion_Year, y=Total,fill=State))+
     geom_boxplot()+
     geom_jitter(position=position_jitter(.01), aes(color=Completion_Year))+
   ggtitle("Degrees granted by year"))
 
-
+## All Years ##
 
 
 ```
