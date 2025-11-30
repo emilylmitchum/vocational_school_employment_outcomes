@@ -1,35 +1,3 @@
-National Center for Education Statistics
-Average amount of tuition and required fees for full-time undergraduate students at public postsecondary institutions operating on an academic year calendar system
-
-[In current dollars]
-Academic Year,Average amount (in USD)
-2023-24,"$10,287"
-2022-23,"$9,235"
-2021-22,"$8,799"
-2020-21,"$8,354"
-2019-20,"$8,228"
-2018-19,"$7,209"
-2017-18,"$6,752"
-2016-17,"$6,045"
-2015-16,"$5,933"
-2014-15,"$5,812"
-2013-14,"$6,143"
-2012-13,"$5,840"
-2011-12,"$5,431"
-2010-11,"$5,626"
-2009-10,"$4,728"
-2008-09,"$4,362"
-2007-08,"$4,383"
-2006-07,"$4,504"
-2005-06,"$4,226"
-2004-05,"$4,264"
-2003-04,"$4,139"
-2002-03,"$3,948"
-
-"This table presents data collected from Title IV institutions in the United States. Prior to 2009-10, the data include only Title IV primarily postsecondary institutions. Amounts are institutional averages as reported by the institution, not average amounts paid by students (i.e., charges are not weighted by enrollment)."
-In-state average tuition and required fees were used for public institutions that reported varying tuitions by residency.
-Amounts displayed are in current dollars.
-"SOURCE: U.S. Department of Education, National Center for Education Statistics, Integrated Postsecondary Education Data System (IPEDS), Institutional Characteristics component final data (2002-03 - 2022-23) and provisional data (2023-24)."
-
-Results limited By
-Degree-granting status,"Non-degree-granting, primarily postsecondary"
+version https://git-lfs.github.com/spec/v1
+oid sha256:a35c9994160b96ce4d71ca78b7fee52705154c750c8149cc5d4f4863f156218f
+size 1496

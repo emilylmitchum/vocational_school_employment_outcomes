@@ -1,30 +1,3 @@
-National Center for Education Statistics
-"Percent of full-time, first-time students receiving financial aid by degree-granting status"
-
-Year,Degree-granting,"Non-degree-granting, primarily postsecondary"
-2022-23,85.6%,79.4%
-2021-22,87.3%,81.4%
-2020-21,85.6%,81.3%
-2019-20,85.5%,82.4%
-2018-19,83.9%,79.8%
-2017-18,83.5%,79.6%
-2016-17,82.8%,79.5%
-2015-16,82.6%,81.2%
-2014-15,83.5%,82.4%
-2013-14,82.9%,83.9%
-2012-13,82.8%,83.9%
-2011-12,83.3%,84.5%
-2010-11,82.3%,84.4%
-2009-10,81.4%,83.4%
-2008-09,77.6%,81.8%
-2007-08,75.6%,81.1%
-2006-07,72.8%,76.9%
-2005-06,75%,77.4%
-2004-05,74.8%,76.8%
-2003-04,73.9%,75.3%
-2002-03,72.7%,74.4%
-2001-02,72.3%,75.1%
-
-"This table presents data collected from Title IV institutions in the United States. Prior to 2009-10, the data include only Title IV primarily postsecondary institutions."
-"Prior to academic year 2010-11, the data represents students receiving aid, rather than students awarded aid. Students awarded aid include those who were awarded aid and accepted while student receiving aid include those who were awarded and disbursed aid"
-"SOURCE: U.S. Department of Education, National Center for Education Statistics, Integrated Postsecondary Education Data System (IPEDS), Student Financial Aid component final data (2001-02 - 2021-22) and provisional data (2022-23)."
+version https://git-lfs.github.com/spec/v1
+oid sha256:35eab652a4723130892f8f038aa63a259f536aec09aa0a646f8123886fdc3ce0
+size 1337
