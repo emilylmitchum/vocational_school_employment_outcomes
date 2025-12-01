@@ -1,3 +1,21 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:b480f75bd4cf1b6a3a824470a2362fbdc7eb136533eb867ed946ba2a63f0edbd
-size 1094
+Academic Year,Average Tuition & Feeds,degree_granting,Year Parsed,public_or_private
+2019-20,15747,Non-Degree Granting,2019-01-01,public
+2019-20,25447,Degree Granting,2019-01-01,public
+2020-21,26084,Degree Granting,2020-01-01,public
+2020-21,15755,Non-Degree Granting,2020-01-01,public
+2021-22,26572,Degree Granting,2021-01-01,public
+2021-22,15978,Non-Degree Granting,2021-01-01,public
+2022-23,27525,Degree Granting,2022-01-01,public
+2022-23,16466,Non-Degree Granting,2022-01-01,public
+2023-24,16414,Non-Degree Granting,2023-01-01,public
+2023-24,28529,Degree Granting,2023-01-01,public
+2019-20,15747,Non-Degree Granting,2019-01-01,private
+2019-20,25447,Degree Granting,2019-01-01,private
+2020-21,26084,Degree Granting,2020-01-01,private
+2020-21,15755,Non-Degree Granting,2020-01-01,private
+2021-22,26572,Degree Granting,2021-01-01,private
+2021-22,15978,Non-Degree Granting,2021-01-01,private
+2022-23,27525,Degree Granting,2022-01-01,private
+2022-23,16466,Non-Degree Granting,2022-01-01,private
+2023-24,16414,Non-Degree Granting,2023-01-01,private
+2023-24,28529,Degree Granting,2023-01-01,private

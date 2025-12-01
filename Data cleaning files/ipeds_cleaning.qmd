@@ -19,6 +19,7 @@ import pandas as pd
 import numpy as np
 import os
 import openpyxl
+import glob
 
 # Read data
 enrollment_2024 = pd.read_csv("../data/ipeds_demographics/EFFY2024.csv")
@@ -26,21 +27,44 @@ enrollment_2023 = pd.read_csv("../data/ipeds_demographics/EFFY2023.csv")
 enrollment_2022 = pd.read_csv("../data/ipeds_demographics/EFFY2022.csv")
 enrollment_2021 = pd.read_csv("../data/ipeds_demographics/EFFY2021.csv")
 enrollment_2020 = pd.read_csv("../data/ipeds_demographics/EFFY2020.csv")
+enrollment_2019 = pd.read_csv("../data/ipeds_demographics/EFFY2019_rv.csv")
+enrollment_2018 = pd.read_csv("../data/ipeds_demographics/EFFY2018_rv.csv")
 
 enrollment_col_dict = pd.read_excel("../data/ipeds_demographics/EFFY2024_dict.xlsx", sheet_name="Varlist")
 student_degree_type = pd.read_excel("../data/ipeds_demographics/EFFY2024_dict.xlsx", sheet_name="Frequencies")
-institution_characteristics = pd.read_csv("../data/ipeds_demographics/HD2024.csv")
+#institution_characteristics = pd.read_csv("../data/ipeds_demographics/HD2024.csv")
+institution_characteristics_dict = pd.read_excel("../data/ipeds_demographics/HD2024_dict.xlsx", sheet_name="Frequencies")
 state_names = pd.read_csv("../data/ipeds_demographics/data-map-state-abbreviations.csv")
-# Trade school list - Varshini data
-trade_school_list = pd.read_csv("../data/institutional_characteristics/2024-certificates/CSV_11192025-624.csv")
+
+# Combine and dedup institution_characteristics so every school is covered (even if it no longer exists)
+path = "../data/ipeds_demographics/institution_characteristics"
+# Get all .csv files in the folder
+csv_files = glob.glob(os.path.join(path, "*.csv"))
+# Read and concatenate
+dfs = []
+for f in csv_files:
+    year = os.path.splitext(os.path.basename(f))[0][-4:]   # last 4 digits of filename
+    df = pd.read_csv(f, encoding="utf-8", encoding_errors="ignore")
+    df["year"] = year
+    dfs.append(df)
+institution_characteristics = pd.concat(dfs, ignore_index=True)
+# Sort by year
+institution_characteristics = institution_characteristics.sort_values(by=["year", "state"], ascending=[False, True])
+# Isolate specific columns
+institution_characteristics = institution_characteristics[["unitid", "institution_name", "state", "HLOFFER"]]
+# Dedup, with 2024 as the most recent copy
+institution_characteristics = institution_characteristics.drop_duplicates(subset=["unitid"])
+institution_characteristics.to_excel("CheckInstitutionCharacteristics.xlsx")
 
 # Create a dictionary with the enrollment dataframes by year
 enrollment_dfs = {"2024": enrollment_2024,
                   "2023": enrollment_2023,
                   "2022": enrollment_2022,
                   "2021": enrollment_2021,
-                  "2020": enrollment_2020
-}
+                  "2020": enrollment_2020,
+                  "2019": enrollment_2019,
+                  "2018": enrollment_2018
+                  }
 
 # Create two dictionaries to map degree type and institution type
   # Ex: 2 = Undergraduate, 11 = Non-degree/certificate-seeking
@@ -51,6 +75,12 @@ effylev_map = effylev_map.set_index("CodeValue")["ValueLabel"].to_dict()
 effyalev_map = student_degree_type[student_degree_type["VarName"] == "EFFYALEV"]
 effyalev_map = effyalev_map[["CodeValue", "ValueLabel"]]
 effyalev_map = effyalev_map.set_index("CodeValue")["ValueLabel"].to_dict()
+
+# Create a dictionary to map highest offering level contextual information
+hloffer_map = institution_characteristics_dict[institution_characteristics_dict["VarName"] == "HLOFFER"]
+hloffer_map = hloffer_map[["CodeValue", "ValueLabel"]]
+hloffer_map["CodeValue"] = pd.to_numeric(hloffer_map["CodeValue"], errors="coerce").astype("Int64")
+hloffer_map = hloffer_map.set_index("CodeValue")["ValueLabel"].to_dict()
 
 # Create a dictionary from the "varName" and "varTitle" columns enrollment_dict
 enrollment_col_dict = enrollment_col_dict[["varName", "varTitle"]]
@@ -82,8 +112,10 @@ for year, df in enrollment_dfs.items():
   df["year"] = year
 
   # Map the full value names
-  df["EFFYLEV"] = df["EFFYLEV"].map(effylev_map)
-  df["EFFYALEV"] = df["EFFYALEV"].map(effyalev_map)
+  if "EFFYLEV" in df.columns:
+    df["EFFYLEV"] = df["EFFYLEV"].map(effylev_map)
+  if "EFFYALEV" in df.columns:
+    df["EFFYALEV"] = df["EFFYALEV"].map(effyalev_map)
 
   # Rename columns
   df.rename(columns=col_rename_dict, inplace=True)
@@ -99,12 +131,18 @@ for year, df in enrollment_dfs.items():
   # Combine institution characteristics with demographic data
   df = df.set_index("unitid").join(institution_characteristics.set_index("unitid"))
   df = df.reset_index()
-  # Add trade school check information based on the institution type
-  df = df.set_index("unitid").join(trade_school_list.set_index("unitid"))
-  df = df.reset_index() 
-  df["trade_school_check"] =  np.where(df["HD2024.Degree-granting status"] == "Nondegree-granting, primarily postsecondary", True, False)
+
+  # Add trade school filtering information based on the highest degree offered
+  df["trade_school_check"] =  np.where(df["HLOFFER"].isin([1, 2, 3, 4]), True, False)
+
+  # Map highest level offered to string value
+  df["HLOFFER_original"] = df["HLOFFER"].copy()
+  df["HLOFFER"] = pd.to_numeric(df["HLOFFER"], errors="coerce").astype("Int64")
+  # print(df[["unitid", "HLOFFER"]].head())
+  df["HLOFFER"] = df["HLOFFER"].map(hloffer_map)
+
   # Reorder columns for clarity
-  cols_to_move = ["year", "institution_name", "trade_school_check", "state", "state_fips_code"]
+  cols_to_move = ["year", "institution_name", "state", "state_fips_code", "trade_school_check", "HLOFFER"]
   target = "Undergraduate or graduate level of student"
   # Pop the columns
   popped = [df.pop(c) for c in cols_to_move]
@@ -120,23 +158,19 @@ for year, df in enrollment_dfs.items():
 ipeds_demographic_data = ipeds_demographic_data.drop(ipeds_demographic_data.filter(regex=r"^(XEY|XEFY)").columns, axis=1)
 
 # Create a copy of just 2024 data (the most recent year) for EDA
-ipeds_demographic_data_2024 = ipeds_demographic_data[ipeds_demographic_data["year"] == 2024]
+ipeds_demographic_data_2024 = ipeds_demographic_data[ipeds_demographic_data["year"] == "2024"]
 
 # Create a copy of all the years filtered for undergraduate total enrollment (non-trade school) and total trade school enrollment (trade schools)
-
-# Create a copy of 2020-2022 (file limits)
-ipeds_demographic_data_2020_2022 = ipeds_demographic_data[(ipeds_demographic_data["year"] == "2020") | (ipeds_demographic_data["year"] == "2021") | (ipeds_demographic_data["year"] == "2022")]
-
-# Create a copy of 2023-2024 (file limits)
-ipeds_demographic_data_2023_2024 = ipeds_demographic_data[(ipeds_demographic_data["year"] == "2023") | (ipeds_demographic_data["year"] == "2024")]
+ipeds_demographic_data = ipeds_demographic_data[
+  ((ipeds_demographic_data["trade_school_check"] == False) & (ipeds_demographic_data["Level and degree/certificate-seeking status of student"] == "Undergraduate total")) | 
+  ((ipeds_demographic_data["trade_school_check"] == True) & (ipeds_demographic_data["Level and degree/certificate-seeking status of student"] == "All students total"))]
 
 # Export all cleaned data to csv
-#ipeds_demographic_data.to_csv(f"../Cleaned data/Cleaned_ipeds_state_demographics.csv", index=False)
-ipeds_demographic_data_2020_2022.to_csv(f"../Cleaned data/Cleaned_ipeds_state_demographics_2020_2022.csv", index=False)
-ipeds_demographic_data_2023_2024.to_csv(f"../Cleaned data/Cleaned_ipeds_state_demographics_2023_2024.csv", index=False)
-# ipeds_demographic_data_2024.to_csv(f"../Cleaned data/Cleaned_ipeds_state_demographics_2024.csv", index=False)
+ipeds_demographic_data.to_csv(f"../Cleaned data/Cleaned_ipeds_state_demographics.csv", index=False)
+ipeds_demographic_data_2024.to_csv(f"../Cleaned data/Cleaned_ipeds_state_demographics_2024.csv", index=False)
 
 ```
+
 # Transform IPEDS demographic data - state-level groups
 ```{python}
 
@@ -154,6 +188,7 @@ library(ggplot2)
 # Read data
 ipeds_demographic_data <- read.csv("../Cleaned data/Cleaned_ipeds_state_demographics.csv")
 ipeds_demographic_data_2024 <- read.csv("../Cleaned data/Cleaned_ipeds_state_demographics_2024.csv")
+presidential_election_results <- read.csv("../Cleaned data/Cleaned_ipeds_state_demographics.csv")
 
 # Replace . with _ in column labels
 names(ipeds_demographic_data) <- gsub("\.", "_", names(ipeds_demographic_data))

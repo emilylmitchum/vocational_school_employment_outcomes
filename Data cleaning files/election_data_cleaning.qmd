@@ -1,0 +1,39 @@
+---
+title: "DSAN 5100 2024 Presidential Election Data Cleaning"
+author: "Taylor McDermott"
+format: 
+  html:
+    embed-resources: true
+    code-fold: true
+editor: visual
+toc: true
+jupyter: python3
+---
+
+# Clean Presidential election data
+
+```{python}
+
+import pandas as pd
+import numpy as np
+
+election = pd.read_excel("../data/presidential_election_results_2024.xlsx")
+
+# Drop electoral college columns
+election = election.drop(columns=["democratic_electoral_votes", "republican_electoral_votes", "other_electoral_votes"])
+
+# Drop popular vote rows (congressional district subsets)
+election = election[~election["state"].astype(str).str.startswith("CD-")]
+
+# Remove "%" symbol from all the percentage columns
+election = election.replace("%", "", regex=True)
+
+# Add a column that notes if a state as a whole voted Democrat or Republican
+election["popular_vote_party"] = np.where(election["democratic_votes"] > election["republican_votes"], "Democratic", "Republican")
+
+# Export results to the cleaned data folder
+election.to_csv("../Cleaned data/Cleaned_2024_election_results.csv", index=False)
+
+```
+
+# Exploratory Data Analysis
