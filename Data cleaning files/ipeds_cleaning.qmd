@@ -27,8 +27,8 @@ enrollment_2023 = pd.read_csv("../data/ipeds_demographics/EFFY2023.csv")
 enrollment_2022 = pd.read_csv("../data/ipeds_demographics/EFFY2022.csv")
 enrollment_2021 = pd.read_csv("../data/ipeds_demographics/EFFY2021.csv")
 enrollment_2020 = pd.read_csv("../data/ipeds_demographics/EFFY2020.csv")
-enrollment_2019 = pd.read_csv("../data/ipeds_demographics/EFFY2019_rv.csv")
-enrollment_2018 = pd.read_csv("../data/ipeds_demographics/EFFY2018_rv.csv")
+enrollment_2019 = pd.read_csv("../data/ipeds_demographics/EFFY2019.csv", encoding_errors="ignore")
+enrollment_2018 = pd.read_csv("../data/ipeds_demographics/EFFY2018.csv", encoding_errors="ignore")
 
 enrollment_col_dict = pd.read_excel("../data/ipeds_demographics/EFFY2024_dict.xlsx", sheet_name="Varlist")
 student_degree_type = pd.read_excel("../data/ipeds_demographics/EFFY2024_dict.xlsx", sheet_name="Frequencies")
@@ -54,7 +54,6 @@ institution_characteristics = institution_characteristics.sort_values(by=["year"
 institution_characteristics = institution_characteristics[["unitid", "institution_name", "state", "HLOFFER"]]
 # Dedup, with 2024 as the most recent copy
 institution_characteristics = institution_characteristics.drop_duplicates(subset=["unitid"])
-institution_characteristics.to_excel("CheckInstitutionCharacteristics.xlsx")
 
 # Create a dictionary with the enrollment dataframes by year
 enrollment_dfs = {"2024": enrollment_2024,
@@ -132,6 +131,21 @@ for year, df in enrollment_dfs.items():
   df = df.set_index("unitid").join(institution_characteristics.set_index("unitid"))
   df = df.reset_index()
 
+  # Goal is to replace "." with np.nan, not working as intended
+  cols = [
+    "Gender unknown",
+    "Another gender",
+    "Total of gender unknown and another gender",
+    "Total gender reported as one of the mutually exclusive binary categories (Men/Women)"
+  ]
+  # Keep the columns that are actually in the current dataframe
+  cols = [c for c in cols if c in df.columns]
+  df[cols] = df[cols].astype(str)
+  # Replace "." (or any variations) with np.nan
+  df[cols] = df[cols].replace(r"^\s*\.\s*$", np.nan, regex=True)
+  # Type conversion for sum at state level
+  df[cols] = df[cols].astype(float).astype("Int64")
+
   # Add trade school filtering information based on the highest degree offered
   df["trade_school_check"] =  np.where(df["HLOFFER"].isin([1, 2, 3, 4]), True, False)
 
@@ -175,37 +189,28 @@ ipeds_demographic_data_2024.to_csv(f"../Cleaned data/Cleaned_ipeds_state_demogra
 ```{python}
 
 # Group by state and by year, using “All Students Total” in column “Level and degree/certificate-seeking status of student” for trade schools and "Undergraduate total" for non-trade schools to avoid duplicating counts across trade school and 4-year programs
-#ipeds_demographic_data = ipeds_demographic_data.
 
-```
+state_demographics_summary = ipeds_demographic_data.copy()
 
-Exploratory Analysis and Visualization
+# Drop institution-specific columns
+state_demographics_summary = state_demographics_summary.drop(columns=["unitid", "institution_name", "HLOFFER", "Original level of study on survey form", "HLOFFER_original", "EFYGUKN"])
 
-```{r}
+# Sum the different totals by demographics by state
+state_demographics_summary = state_demographics_summary.groupby(by=["state", "state_fips_code", "year", "trade_school_check", "Level and degree/certificate-seeking status of student", "Undergraduate or graduate level of student"]).sum()
+state_demographics_summary = state_demographics_summary.reset_index()
 
-library(ggplot2)
+# Total sum by state
+state_demographics_summary_totals = state_demographics_summary.copy()
+state_demographics_summary_totals = state_demographics_summary_totals.groupby(by=["state", "state_fips_code", "year"]).sum()
+state_demographics_summary_totals = state_demographics_summary_totals.reset_index()
 
-# Read data
-ipeds_demographic_data <- read.csv("../Cleaned data/Cleaned_ipeds_state_demographics.csv")
-ipeds_demographic_data_2024 <- read.csv("../Cleaned data/Cleaned_ipeds_state_demographics_2024.csv")
-presidential_election_results <- read.csv("../Cleaned data/Cleaned_ipeds_state_demographics.csv")
+# Isolate the 2024 summary data
+state_demographics_summary_2024 = state_demographics_summary.copy()
+state_demographics_summary_2024 = state_demographics_summary_2024[state_demographics_summary_2024["year"] == "2024"]
 
-# Replace . with _ in column labels
-names(ipeds_demographic_data) <- gsub("\.", "_", names(ipeds_demographic_data))
-names(ipeds_demographic_data_2024) <- gsub("\.", "_", names(ipeds_demographic_data))
-
-## 2024 Demographic Data ##
-
-# N/A Values by column
-summary(ipeds_demographic_data_2024)
-
-# Box plot: degree distribution by race/ethnicity
-(MyL1<-ggplot(ipeds_demographic_data_2024, aes(x=Completion_Year, y=Total,fill=State))+
-    geom_boxplot()+
-    geom_jitter(position=position_jitter(.01), aes(color=Completion_Year))+
-  ggtitle("Degrees granted by year"))
-
-## All Years ##
-
+# Export all cleaned data to csv
+state_demographics_summary.to_csv(f"../Cleaned data/Cleaned_ipeds_summary_state_demographics.csv", index=False)
+state_demographics_summary_totals.to_csv(f"../Cleaned data/Cleaned_ipeds_totals_summary_state_demographics.csv", index=False)
+state_demographics_summary_2024.to_csv(f"../Cleaned data/Cleaned_ipeds_summary_2024_state_demographics.csv", index=False)
 
 ```

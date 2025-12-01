@@ -35,5 +35,3 @@ election["popular_vote_party"] = np.where(election["democratic_votes"] > electio
 election.to_csv("../Cleaned data/Cleaned_2024_election_results.csv", index=False)
 
 ```
-
-# Exploratory Data Analysis
