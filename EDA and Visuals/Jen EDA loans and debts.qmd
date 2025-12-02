@@ -1,0 +1,216 @@
+---
+title: "DSAN 5100 Student loans and debts EDA and visuals"
+author: "Jen Guo"
+format: 
+  html:
+    embed-resources: true
+    code-fold: true
+editor: visual
+toc: true
+---
+
+# EDA debt data
+
+```{r}
+library(dplyr)
+library(tidyverse)
+#load the the cleaned debt by year data 
+clean_debtyear <- read.csv("Cleaned data/Cleaned_debt_by_year.csv")
+#head(clean_debtyear)
+
+#create column to get sum dollars outstanding by year, quarter
+clean_debtyear_outstanding_total <- clean_debtyear %>%
+    group_by(Year) %>%
+    mutate(Total_Dollars_Outstanding = rowSums(across(c("Less_than_5k_Dollars_Outstanding_.in.billions.", "X5k_to_10K_Dollars_Outstanding_.in.billions.", "X10k_to_20K_Dollars_Outstanding_.in.billions.", "X20k_to_40K_Dollars_Outstanding_.in.billions.", "X40k_to_60K_Dollars_Outstanding_.in.billions.", "X60k_to_80K_Dollars_Outstanding_.in.billions.", "X80k_to_100K_Dollars_Outstanding_.in.billions.", "X100k_to_200K_Dollars_Outstanding_.in.billions.", "X200K_plus_Dollars_Outstanding_.in.billions."))))
+#head(clean_debtyear_outstanding_total$Total_Dollars_Outstanding)
+
+#create column to get sum dollars borrowed by year, quarter
+clean_debtyear_borrow_total <- clean_debtyear_outstanding_total %>%
+    group_by(Year) %>%
+    mutate(Total_Dollars_Borrowers = rowSums(across(c("Less_than_5k_Borrowers_.in.thousands.", "X5k_to_10k_Borrowers_.in.thousands.", "X10k_to_20k_Borrowers_.in.thousands.", "X20k_to_40k_Borrowers_.in.thousands.", "X40k_to_60k_Borrowers_.in.thousands." , "X60k_to_80k_Borrowers_.in.thousands." , "X80k_to_100k_Borrowers_.in.thousands.", "X100k_to_200k_Borrowers_.in.thousands.", "X200k_plus_Borrowers_.in.thousands." ))))
+#head(clean_debtyear_borrow_total$Total_Dollars_Borrowers)
+```
+
+```{r}
+#drop last two rows due to foot notes
+clean_debtyear_drop <- head(clean_debtyear_borrow_total, n = -2)
+#print(clean_debtyear_drop$Total_Dollars_Borrowers)
+```
+
+```{r}
+#transform Year into Date format 
+clean_debtyear_drop$Year <- as.numeric(clean_debtyear_drop$Year)
+
+#ungroup by year 
+clean_debtyear_drop <- dplyr::ungroup(clean_debtyear_drop)
+
+#create plotly line graph of debt dolloars outstanding over years
+library(plotly)
+debtyear_fig <- plot_ly(clean_debtyear_drop,
+                       x=~Year, y =~Total_Dollars_Outstanding, 
+                       type = 'scatter',
+                       mode = 'lines+markers',
+                       text = ~paste("Year: ", Year, "<br>", "Quarter: ", Quarter, "<br>", "Total debt dollars outstanding: ", Total_Dollars_Outstanding), hoverinfo = "text", textposition = "none")
+
+#add plot title and axis 
+debtyear_fig <- debtyear_fig %>%
+    layout(title = "Total Debt Dollars Outstanding from 2017 to 2025",
+          xaxis = list(title = "Year"),
+          yaxis = list(title = "Debt Dollars Outstanding (in billions)"))
+
+debtyear_fig
+```
+
+```{r}
+#create plotly line graph of debt borrowers over years
+debtyear_fig2 <- plot_ly(clean_debtyear_drop,
+                       x=~Year, y =~Total_Dollars_Borrowers, 
+                       type = 'scatter',
+                       mode = 'lines+markers',
+                       text = ~paste("Year: ", Year, "<br>", "Quarter: ", Quarter, "<br>", "Number of borrowers (in thousands): ", Total_Dollars_Borrowers), hoverinfo = "text", textposition = "none")
+
+#add plot title and axis 
+debtyear_fig2 <- debtyear_fig2 %>%
+    layout(title = "Total Number of Loan Borrowers from 2017 to 2025",
+          xaxis = list(title = "Year"),
+          yaxis = list(title = "Number of Borrowers (in thousands)"))
+
+debtyear_fig2
+```
+
+# EDA Loan Type Data
+
+```{r}
+#load the the cleaned loan type by year data 
+clean_loanyear <- read.csv("Cleaned data/Cleaned_loantype_year.csv")
+#names(clean_loanyear)
+
+#create column to get sum dollars loan outstanding by year
+clean_loanyear_outstanding_total <- clean_loanyear %>%
+    group_by(Year) %>%
+    mutate(Total_Dollars_Loan_Outstanding = rowSums(across(c("Stafford_Subsidized_Dollars_Outstanding_.in.billions.", "Stafford_Unsubsidized_Dollars_Outstanding_.in.billions.", "Stafford_.Combined._Dollars_Outstanding_.in.billions.", "Grad_PLUS_Dollars_Outstanding_.in.billions.", "Parent_PLUS_Dollars_Outstanding_.in.billions.", "Perkins_Dollars_Outstanding_.in.billions." , "Consolidation_Dollars_Outstanding_.in.billions."))))
+
+#create column for total reciever of loans by year 
+clean_loanyear_recipients_total <- clean_loanyear_outstanding_total %>%
+    group_by(Year) %>%
+    mutate(Total_Loan_Recipients = rowSums(across(c("Stafford_Subsidized_Recipients_.in.millions.", "Stafford_Unsubsidized_Recipients_.in.millions.", "Stafford_.Combined._Unique_Recipients_.in.millions.", "Grad_PLUS_Recipients_.in.millions.", "Parent_PLUS_Recipients_.in.millions.", "Perkins_Recipients_.in.millions." , "Consolidation_Recipients_.in.millions."))))
+                                                           
+```
+
+```{r}
+#drop last 6 rows due to footnotes
+clean_loanyear_drop <- head(clean_loanyear_recipients_total, n = -6)
+```
+
+```{r}
+#transform Year into numeric format 
+clean_loanyear_drop$Year <- as.numeric(clean_loanyear_drop$Year)
+
+#ungroup by year 
+clean_loanyear_drop <- dplyr::ungroup(clean_loanyear_drop)
+
+#create plotly line graph of loan dolloars outstanding over years
+loanyear_fig <- plot_ly(clean_loanyear_drop,
+                       x=~Year, y =~Total_Dollars_Loan_Outstanding, 
+                       type = 'scatter',
+                       mode = 'lines+markers',
+                       text = ~paste("Year: ", Year, "<br>", "Quarter: ", Quarter, "<br>", "Total loan dollars outstanding: ", Total_Dollars_Loan_Outstanding), hoverinfo = "text", textposition = "none")
+
+#add plot title and axis 
+loanyear_fig <- loanyear_fig %>%
+    layout(title = "Total Loan Dollars Outstanding from 2014 to 2025",
+          xaxis = list(title = "Year"),
+          yaxis = list(title = "Loan Dollars Outstanding (in billions)"))
+
+loanyear_fig
+```
+
+```{r}
+#create plotly line graph of loans recieved over years
+loanyear_fig2 <- plot_ly(clean_loanyear_drop,
+                       x=~Year, y =~Total_Loan_Recipients, 
+                       type = 'scatter',
+                       mode = 'lines+markers',
+                       text = ~paste("Year: ", Year, "<br>", "Quarter: ", Quarter, "<br>", "Total recieved: ", Total_Loan_Recipients), hoverinfo = "text", textposition = "none")
+
+#add plot title and axis 
+loanyear_fig2 <- loanyear_fig2 %>%
+    layout(title = "Total Number of Loans Recieved from 2014 to 2025",
+          xaxis = list(title = "Year"),
+          yaxis = list(title = "Total Loans Recieved (in thousands)"))
+
+loanyear_fig2
+```
+
+# IPEDS Tuition and loan
+
+```{r}
+#load the tuition data 
+tuition <- read.csv("Cleaned data/Cleaned_tuition_data.csv")
+#head(tuition)
+
+#create new column for year in tuition data 
+tuition_year <- tuition %>%
+    separate(col = Academic.Year,
+            into = c("Year", "End_Year"),
+            sep = "-")
+head(tuition_year)
+
+#convert Year in tuition into numeric 
+tuition_year$Year <- as.numeric(tuition_year$Year)
+
+```
+
+```{r}
+#convert the debt in billions of dollars into thousands to scale with tuition (in thousands)
+# debt_convert <- clean_debtyear_drop %>%
+#     mutate("Total_Debt_Outstanding_Thousands" = 1000000 * (Total_Dollars_Outstanding))
+```
+
+```{r}
+#average out the Total_Debt_Outstanding_Thousands to scale with average tuition 
+debt_avg_convert <- clean_debtyear_drop %>%
+    group_by(Year) %>%
+    summarize(Average_debt_outstanding = mean(Total_Dollars_Outstanding, na.rm = TRUE))
+```
+
+```{r}
+#join the tuition and the debt data
+tuition_debt_join <- left_join(tuition_year, debt_avg_convert, by = "Year")
+#head(tuition_debt_join)
+#names(tuition_debt_join)
+
+#sort data for clean lines on plot
+tuition_debt_join2 <- tuition_debt_join %>%
+    arrange(Year, degree_granting)
+```
+
+```{r}
+#create plotly line graph of debt amount and tuition
+tuition_debt_fig <- plot_ly(tuition_debt_join2,
+                       x=~Year, y =~Average_debt_outstanding * 1000000, 
+                       name = "Average_debt_outstanding",
+                       type = 'scatter',
+                       mode = 'lines+markers',
+                       text = ~paste("Year: ", Year, "<br>", "Average Debt Amount: ", Average_debt_outstanding), hoverinfo = "text", textposition = "none")
+
+tuition_debt_fig <- tuition_debt_fig %>%
+    add_trace(x =~Year, y = ~Average.Tuition...Feeds, 
+              name = "Average Tuition",
+              color =~degree_granting,
+              split =~degree_granting,
+              type = 'scatter',
+                       mode = 'lines+markers',
+                       text = ~paste("Year: ", Year, "<br>", "Tuition: ", Average.Tuition...Feeds), hoverinfo = "text", textposition = "none", yaxis = "y2")
+
+#add plot title and axis 
+tuition_debt_fig <- tuition_debt_fig %>%
+    layout(title = "Average Tuition vs. Debt Outstanding from 2017 to 2025",
+          xaxis = list(title = "Year"),
+          yaxis = list(title = "Debt (in thousands)", tickprefix = "$"),
+          yaxis2 = list(title = "Tuition (in thousands)",
+                       overlaying = "y",
+                       side = "right", tickprefix = "$"))
+
+tuition_debt_fig
+```
