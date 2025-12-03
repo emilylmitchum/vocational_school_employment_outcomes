@@ -1,0 +1,54 @@
+---
+title: "DSAN 5100 IPEDS Demographic Data and 2024 Election Results Analysis"
+author: "Taylor McDermott"
+format: 
+  html:
+    embed-resources: true
+    code-fold: true
+editor: visual
+toc: true
+---
+
+# IPEDS Demographic Data/2024 Election Results Exploratory Analysis and Visualization
+
+```{r}
+
+# plotly instead of ggplot2!!
+
+# Read data
+ipeds_demographic_data <- read.csv("../Cleaned data/Cleaned_ipeds_state_demographics.csv")
+ipeds_demographic_data_2024 <- read.csv("../Cleaned data/Cleaned_ipeds_state_demographics_2024.csv")
+ipeds_state_summary <- read.csv("../Cleaned data/Cleaned_ipeds_summary_state_demographics.csv")
+ipeds_state_totals <- read.csv("../Cleaned data/Cleaned_ipeds_totals_summary_state_demographics.csv")
+presidential_election_results <- read.csv("../Cleaned data/Cleaned_2024_election_results.csv")
+
+# Create a list of all the datasets for initial cleaning
+dfs  <- list(ipeds_demographic_data, ipeds_demographic_data_2024, ipeds_state_summary, ipeds_state_totals, presidential_election_results)
+
+# Replace . with _ in column labels
+dfs <- lapply(dfs, function(df) {
+    names(df) <- gsub("\\.", "_", names(df))
+    df
+})
+
+## 2024 IPEDS Demographic Data ##
+
+# See N/A Values by column
+summary(ipeds_demographic_data_2024)
+
+# Box plot: overall distribution 
+
+
+```
+
+```{r}
+
+# Box plot: enrollment by race/ethnicity
+(MyL1<-ggplot(ipeds_demographic_data_2024, aes(x=Completion_Year, y=Total,fill=State))+
+    geom_boxplot()+
+    geom_jitter(position=position_jitter(.01), aes(color=Completion_Year))+
+  ggtitle("Degrees granted by year"))
+
+## All Years ##
+
+```

@@ -94,9 +94,6 @@ institution_characteristics["state"] = institution_characteristics["state"].map(
 institution_characteristics.columns = institution_characteristics.columns.str.strip()
 institution_characteristics["unitid"] = institution_characteristics["unitid"].astype(int)
 
-# Create a trade school key to join during analysis
-trade_school_list = trade_school_list[["unitid", "HD2024.Degree-granting status", "HD2024.Institutional category"]]
-
 # Create an empty dataframe to combine all the demographics data
 ipeds_demographic_data = pd.DataFrame()
 
