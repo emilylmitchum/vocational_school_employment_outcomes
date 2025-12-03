@@ -239,7 +239,7 @@ debts_year_remove$"80k_to_100K_Dollars_Outstanding_(in billions)" <- gsub("\\$",
 debts_year_remove$"100k_to_200K_Dollars_Outstanding_(in billions)" <- gsub("\\$", "",debts_year_remove$"100k_to_200K_Dollars_Outstanding_(in billions)")
 debts_year_remove$"200K_plus_Dollars_Outstanding_(in billions)" <- gsub("\\$", "",debts_year_remove$"200K_plus_Dollars_Outstanding_(in billions)")
 
-head(debts_year_remove)
+#head(debts_year_remove)
 ```
 
 ```{r}
@@ -270,6 +270,11 @@ debts_year_remove$Year <- as.Date(debts_year_remove$Year)
 str(debts_year_remove)
 ```
 
+```{r}
+#export cleaned dataframe into csv file 
+write.csv(debts_year_remove, "Cleaned data/Cleaned_debt_by_year.csv")
+```
+
 # Cleaning loan type by year
 
 ```{r}
@@ -283,7 +288,7 @@ loan_year2 <- loan_year[-(1:4),]
 loan_year2 <- loan_year2 %>%
     select(1:(ncol(loan_year2)-5))
 
-head(loan_year2)
+#head(loan_year2)
 ```
 
 ```{r}
@@ -361,13 +366,14 @@ str(loan_year_remove)
 
 ```{r}
 #join the debt by year and loan type by year datasets on Year column 
-loantype_debt_year <- inner_join(debts_year_remove, loan_year_remove, by = c("Year", "Quarter"))
-head(loantype_debt_year)
+#loantype_debt_year <- inner_join(debts_year_remove, loan_year_remove, by = c("Year", "Quarter"))
+#head(loantype_debt_year)
 ```
 
 ```{r}
 #export joined dataframes into csv 
-write.csv(loantype_debt_year, "Cleaned data/Cleaned_debt_loantype_year.csv")
+#write.csv(loan_year_remove, "Cleaned data/Cleaned_debt_loantype_year.csv")
+write.csv(loan_year_remove, "Cleaned data/Cleaned_loantype_year.csv")
 ```
 
 # Cleaning non-payment rates school types
