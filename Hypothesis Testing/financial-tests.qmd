@@ -57,6 +57,8 @@ summary(oneway)
 
 The one-way ANOVA test revealed a highly significant effect of education level on median weekly earnings. This indicates that mean earnings differ substantially across the three education groups.
 
+## **Two-Way ANOVA (Analyzing Effect of Education Level & Time)**
+
 ```{r}
 model_two_way <- aov(median_weekly_earnings ~ education_level * year, data = earnings_df)
 
