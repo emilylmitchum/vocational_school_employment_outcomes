@@ -151,7 +151,7 @@ def main():
     output_file = "state_socioeconomic_2019_2025.csv"
     final_df.to_csv(output_file, index=False)
     
-    print(f"\n✅ Success! Saved to: {output_file}")
+    print(f"\n Success! Saved to: {output_file}")
     print(f"Total rows: {len(final_df)}")
     print(f"\nFirst few rows:")
     print(final_df.head(10))

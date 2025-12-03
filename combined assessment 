@@ -1,0 +1,1158 @@
+import pandas as pd
+import requests
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# # Census API base URL
+# BASE_URL = "https://api.census.gov/data"
+
+# # Add your Census API key here
+# API_KEY = "116072db51d1d74ed352c58afeea90b570ea69ec"
+
+# def get_acs_data(year, variables, geography="state:*"):
+#     """
+#     Fetch data from Census ACS 1-Year API
+#     """
+#     url = f"{BASE_URL}/{year}/acs/acs1"
+    
+#     params = {
+#         "get": ",".join(["NAME"] + variables),
+#         "for": geography
+#     }
+    
+#     if API_KEY:
+#         params["key"] = API_KEY
+    
+#     try:
+#         response = requests.get(url, params=params)
+#         response.raise_for_status()
+#         data = response.json()
+        
+#         df = pd.DataFrame(data[1:], columns=data[0])
+#         df['Year'] = year
+#         return df
+#     except Exception as e:
+#         print(f"Error fetching {year} data: {e}")
+#         return None
+
+# def fetch_question1_data():
+#     """
+#     Question 1: Average household income on state level (geographic/census data)
+#     Simple state-level median household income
+#     """
+#     print("\n" + "="*70)
+#     print("QUESTION 1: Average Household Income by State")
+#     print("="*70)
+    
+#     variables = ["B19013_001E"]  # Overall median household income only
+    
+#     years = [2019, 2021, 2022, 2023]
+#     all_data = []
+    
+#     print("Fetching state-level median household income...")
+    
+#     for year in years:
+#         print(f"  Downloading {year}...")
+#         df = get_acs_data(year, variables)
+#         if df is not None:
+#             all_data.append(df)
+    
+#     if not all_data:
+#         return None
+    
+#     combined = pd.concat(all_data, ignore_index=True)
+    
+#     combined = combined.rename(columns={
+#         "NAME": "State",
+#         "state": "FIPS",
+#         "B19013_001E": "Median_Household_Income"
+#     })
+    
+#     combined['Median_Household_Income'] = pd.to_numeric(
+#         combined['Median_Household_Income'], errors='coerce'
+#     )
+    
+#     final_df = combined[['State', 'FIPS', 'Year', 'Median_Household_Income']].copy()
+    
+#     # Add empty rows for 2020, 2024, 2025
+#     states_2019 = final_df[final_df['Year'] == 2019][['State', 'FIPS']].copy()
+#     for year in [2020, 2024, 2025]:
+#         empty = states_2019.copy()
+#         empty['Year'] = year
+#         empty['Median_Household_Income'] = None
+#         final_df = pd.concat([final_df, empty], ignore_index=True)
+    
+#     final_df = final_df.sort_values(['State', 'Year']).reset_index(drop=True)
+    
+#     # Save CSV
+#     output_file = "Q1_household_income_by_state.csv"
+#     final_df.to_csv(output_file, index=False)
+#     print(f"\n Saved: {output_file}")
+    
+#     return final_df
+
+# def fetch_question2_data():
+#     """
+#     Question 2: Household income broken down by education level
+#     Focus on vocational schooling impact
+#     """
+#     print("\n" + "="*70)
+#     print("QUESTION 2: Household Income by Education Level")
+#     print("="*70)
+    
+#     variables = [
+#         "B19013_001E",  # Overall median
+#         "B19037_002E",  # Less than high school
+#         "B19037_003E",  # High school graduate
+#         "B19037_004E",  # Some college or associate's degree (VOCATIONAL)
+#         "B19037_005E",  # Bachelor's degree or higher
+#     ]
+    
+#     years = [2019, 2021, 2022, 2023]
+#     all_data = []
+    
+#     print("Fetching household income by education level...")
+    
+#     for year in years:
+#         print(f"  Downloading {year}...")
+#         df = get_acs_data(year, variables)
+#         if df is not None:
+#             all_data.append(df)
+    
+#     if not all_data:
+#         return None
+    
+#     combined = pd.concat(all_data, ignore_index=True)
+    
+#     combined = combined.rename(columns={
+#         "NAME": "State",
+#         "state": "FIPS",
+#         "B19013_001E": "Overall_Median_Income",
+#         "B19037_002E": "Income_LessThan_HS",
+#         "B19037_003E": "Income_HS_Graduate",
+#         "B19037_004E": "Income_Vocational_Associate",
+#         "B19037_005E": "Income_Bachelors_Plus",
+#     })
+    
+#     # Convert to numeric
+#     income_cols = ['Overall_Median_Income', 'Income_LessThan_HS', 
+#                     'Income_HS_Graduate', 'Income_Vocational_Associate', 
+#                     'Income_Bachelors_Plus']
+    
+#     for col in income_cols:
+#         combined[col] = pd.to_numeric(combined[col], errors='coerce')
+    
+#     # Calculate vocational premium
+#     combined['Vocational_Premium_Dollar'] = (
+#         combined['Income_Vocational_Associate'] - combined['Income_HS_Graduate']
+#     ).round(0)
+    
+#     combined['Vocational_Premium_Percent'] = (
+#         (combined['Income_Vocational_Associate'] / combined['Income_HS_Graduate'] - 1) * 100
+#     ).round(2)
+    
+#     combined['Bachelor_Premium_vs_Vocational'] = (
+#         combined['Income_Bachelors_Plus'] - combined['Income_Vocational_Associate']
+#     ).round(0)
+    
+#     final_df = combined[[
+#         'State', 'FIPS', 'Year',
+#         'Overall_Median_Income',
+#         'Income_LessThan_HS',
+#         'Income_HS_Graduate',
+#         'Income_Vocational_Associate',
+#         'Income_Bachelors_Plus',
+#         'Vocational_Premium_Dollar',
+#         'Vocational_Premium_Percent',
+#         'Bachelor_Premium_vs_Vocational'
+#     ]].copy()
+    
+#     # Add empty rows
+#     states_2019 = final_df[final_df['Year'] == 2019][['State', 'FIPS']].copy()
+#     for year in [2020, 2024, 2025]:
+#         empty = states_2019.copy()
+#         empty['Year'] = year
+#         for col in final_df.columns:
+#             if col not in ['State', 'FIPS', 'Year']:
+#                 empty[col] = None
+#         final_df = pd.concat([final_df, empty], ignore_index=True)
+    
+#     final_df = final_df.sort_values(['State', 'Year']).reset_index(drop=True)
+    
+#     # Save CSV
+#     output_file = "Q2_household_income_by_education.csv"
+#     final_df.to_csv(output_file, index=False)
+#     print(f"\n Saved: {output_file}")
+    
+#     return final_df
+
+# def create_visualizations(q1_data, q2_data):
+#     """
+#     Create comparison graphics between Q1 and Q2
+#     """
+#     print("\n" + "="*70)
+#     print("Creating Visualizations...")
+#     print("="*70)
+    
+#     # Filter to 2023 data for cleaner visuals
+#     q1_2023 = q1_data[q1_data['Year'] == 2023].copy()
+#     q2_2023 = q2_data[q2_data['Year'] == 2023].copy()
+    
+#     # Remove Puerto Rico for cleaner charts
+#     q1_2023 = q1_2023[q1_2023['State'] != 'Puerto Rico']
+#     q2_2023 = q2_2023[q2_2023['State'] != 'Puerto Rico']
+    
+#     # Set style
+#     sns.set_style("whitegrid")
+    
+#     # Figure 1: Q1 vs Q2 - Top 10 States Overall Income
+#     fig1, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+    
+#     # Q1: Simple state income
+#     q1_top10 = q1_2023.nlargest(10, 'Median_Household_Income')
+#     ax1.barh(q1_top10['State'], q1_top10['Median_Household_Income'], color='steelblue')
+#     ax1.set_xlabel('Median Household Income ($)', fontsize=12)
+#     ax1.set_title('Q1: Top 10 States by Median Household Income (2023)', 
+#                     fontsize=14, fontweight='bold')
+#     ax1.invert_yaxis()
+#     for i, v in enumerate(q1_top10['Median_Household_Income']):
+#         ax1.text(v + 1000, i, f'${v:,.0f}', va='center', fontsize=9)
+    
+#     # Q2: Income breakdown by education
+#     q2_top10 = q2_2023.nlargest(10, 'Overall_Median_Income')
+#     x = range(len(q2_top10))
+#     width = 0.2
+    
+#     ax2.barh([i - width*1.5 for i in x], q2_top10['Income_LessThan_HS'], 
+#                 width, label='< High School', color='#d62728')
+#     ax2.barh([i - width*0.5 for i in x], q2_top10['Income_HS_Graduate'], 
+#                 width, label='High School', color='#ff7f0e')
+#     ax2.barh([i + width*0.5 for i in x], q2_top10['Income_Vocational_Associate'], 
+#                 width, label='Vocational/Associate', color='#2ca02c')
+#     ax2.barh([i + width*1.5 for i in x], q2_top10['Income_Bachelors_Plus'], 
+#                 width, label='Bachelor+', color='#1f77b4')
+    
+#     ax2.set_yticks(x)
+#     ax2.set_yticklabels(q2_top10['State'])
+#     ax2.set_xlabel('Median Household Income ($)', fontsize=12)
+#     ax2.set_title('Q2: Top 10 States - Income by Education Level (2023)', 
+#                     fontsize=14, fontweight='bold')
+#     ax2.legend(loc='lower right', fontsize=9)
+#     ax2.invert_yaxis()
+    
+#     plt.tight_layout()
+#     plt.savefig('comparison_Q1_vs_Q2_state_income.png', dpi=300, bbox_inches='tight')
+#     print(" Saved: comparison_Q1_vs_Q2_state_income.png")
+    
+#     # Figure 2: Vocational Education Premium Analysis (Q2 only)
+#     fig2, (ax3, ax4) = plt.subplots(1, 2, figsize=(16, 6))
+    
+#     # Top 10 states by vocational premium
+#     q2_premium = q2_2023.nlargest(10, 'Vocational_Premium_Dollar')
+#     ax3.barh(q2_premium['State'], q2_premium['Vocational_Premium_Dollar'], 
+#                 color='seagreen')
+#     ax3.set_xlabel('Additional Income from Vocational Education ($)', fontsize=12)
+#     ax3.set_title('Q2: Top 10 States - Vocational Premium vs High School (2023)', 
+#                     fontsize=14, fontweight='bold')
+#     ax3.invert_yaxis()
+#     for i, v in enumerate(q2_premium['Vocational_Premium_Dollar']):
+#         ax3.text(v + 500, i, f'${v:,.0f}', va='center', fontsize=9)
+    
+#     # Vocational vs Bachelor's comparison
+#     q2_sample = q2_2023.nlargest(10, 'Income_Vocational_Associate')
+#     x_pos = range(len(q2_sample))
+    
+#     ax4.bar([i - 0.2 for i in x_pos], q2_sample['Income_Vocational_Associate'], 
+#             0.4, label='Vocational/Associate', color='seagreen')
+#     ax4.bar([i + 0.2 for i in x_pos], q2_sample['Income_Bachelors_Plus'], 
+#             0.4, label='Bachelor+', color='royalblue')
+    
+#     ax4.set_xticks(x_pos)
+#     ax4.set_xticklabels(q2_sample['State'], rotation=45, ha='right')
+#     ax4.set_ylabel('Median Household Income ($)', fontsize=12)
+#     ax4.set_title('Q2: Vocational vs Bachelor\'s Degree Income (2023)', 
+#                     fontsize=14, fontweight='bold')
+#     ax4.legend()
+    
+#     plt.tight_layout()
+#     plt.savefig('vocational_education_premium_analysis.png', dpi=300, bbox_inches='tight')
+#     print(" Saved: vocational_education_premium_analysis.png")
+    
+#     # Figure 3: National Average Comparison
+#     fig3, ax5 = plt.subplots(figsize=(10, 6))
+    
+#     # Calculate national averages
+#     q1_avg = q1_2023['Median_Household_Income'].mean()
+#     q2_avg_by_edu = {
+#         'Less than HS': q2_2023['Income_LessThan_HS'].mean(),
+#         'High School': q2_2023['Income_HS_Graduate'].mean(),
+#         'Vocational/\nAssociate': q2_2023['Income_Vocational_Associate'].mean(),
+#         'Bachelor+': q2_2023['Income_Bachelors_Plus'].mean()
+#     }
+    
+#     categories = list(q2_avg_by_edu.keys())
+#     values = list(q2_avg_by_edu.values())
+#     colors = ['#d62728', '#ff7f0e', '#2ca02c', '#1f77b4']
+    
+#     bars = ax5.bar(categories, values, color=colors, alpha=0.8, edgecolor='black')
+#     ax5.axhline(y=q1_avg, color='red', linestyle='--', linewidth=2, 
+#                 label=f'Q1: Overall Average (${q1_avg:,.0f})')
+    
+#     ax5.set_ylabel('Median Household Income ($)', fontsize=12)
+#     ax5.set_title('National Average: Overall (Q1) vs By Education (Q2) - 2023', 
+#                     fontsize=14, fontweight='bold')
+#     ax5.legend(fontsize=10)
+    
+#     # Add value labels
+#     for bar, val in zip(bars, values):
+#         height = bar.get_height()
+#         ax5.text(bar.get_x() + bar.get_width()/2., height,
+#                 f'${val:,.0f}', ha='center', va='bottom', fontsize=10, fontweight='bold')
+    
+#     plt.tight_layout()
+#     plt.savefig('national_average_comparison.png', dpi=300, bbox_inches='tight')
+#     print(" Saved: national_average_comparison.png")
+    
+#     plt.close('all')
+
+# def main():
+#     """
+#     Main function to fetch both datasets and create visualizations
+#     """
+#     print("\n" + "="*70)
+#     print("CENSUS DATA ANALYSIS: TWO SEPARATE QUESTIONS")
+#     print("="*70)
+    
+#     # Fetch Q1 data
+#     q1_data = fetch_question1_data()
+    
+#     # Fetch Q2 data
+#     q2_data = fetch_question2_data()
+    
+#     if q1_data is not None and q2_data is not None:
+#         # Create visualizations
+#         create_visualizations(q1_data, q2_data)
+        
+#         print("\n" + "="*70)
+#         print("SUMMARY")
+#         print("="*70)
+#         print("\n QUESTION 1 OUTPUT:")
+#         print("   File: Q1_household_income_by_state.csv")
+#         print("   Content: Simple state-level median household income")
+#         print("   Columns: State, FIPS, Year, Median_Household_Income")
+        
+#         print("\n QUESTION 2 OUTPUT:")
+#         print("   File: Q2_household_income_by_education.csv")
+#         print("   Content: Household income broken down by education level")
+#         print("   Columns: State, FIPS, Year, Income by education levels,")
+#         print("            Vocational premium calculations")
+        
+#         print("\n VISUALIZATIONS:")
+#         print("   1. comparison_Q1_vs_Q2_state_income.png")
+#         print("   2. vocational_education_premium_analysis.png")
+#         print("   3. national_average_comparison.png")
+#         print("="*70)
+#     else:
+#         print("\n Error: Could not retrieve data. Check API key and connection.")
+
+# if __name__ == "__main__":
+#     main()
+
+
+# import pandas as pd
+# import requests
+# import matplotlib.pyplot as plt
+# import seaborn as sns
+
+# # Census API base URL
+# BASE_URL = "https://api.census.gov/data"
+
+# # Add your Census API key here
+# API_KEY = "116072db51d1d74ed352c58afeea90b570ea69ec"
+
+# def get_acs_data(year, variables, geography="state:*"):
+#     """
+#     Fetch data from Census ACS 1-Year API
+#     """
+#     url = f"{BASE_URL}/{year}/acs/acs1"
+    
+#     params = {
+#         "get": ",".join(["NAME"] + variables),
+#         "for": geography
+#     }
+    
+#     if API_KEY:
+#         params["key"] = API_KEY
+    
+#     try:
+#         response = requests.get(url, params=params)
+#         response.raise_for_status()
+#         data = response.json()
+        
+#         df = pd.DataFrame(data[1:], columns=data[0])
+#         df['Year'] = year
+#         return df
+#     except Exception as e:
+#         print(f"Error fetching {year} data: {e}")
+#         return None
+
+# def fetch_question1_data():
+#     """
+#     Question 1: Average household income on state level (geographic/census data)
+#     Simple state-level median household income
+#     """
+#     print("\n" + "="*70)
+#     print("QUESTION 1: Average Household Income by State")
+#     print("="*70)
+    
+#     variables = ["B19013_001E"]  # Overall median household income only
+    
+#     years = [2019, 2021, 2022, 2023]
+#     all_data = []
+    
+#     print("Fetching state-level median household income...")
+    
+#     for year in years:
+#         print(f"  Downloading {year}...")
+#         df = get_acs_data(year, variables)
+#         if df is not None:
+#             all_data.append(df)
+    
+#     if not all_data:
+#         return None
+    
+#     combined = pd.concat(all_data, ignore_index=True)
+    
+#     combined = combined.rename(columns={
+#         "NAME": "State",
+#         "state": "FIPS",
+#         "B19013_001E": "Median_Household_Income"
+#     })
+    
+#     combined['Median_Household_Income'] = pd.to_numeric(
+#         combined['Median_Household_Income'], errors='coerce'
+#     )
+    
+#     final_df = combined[['State', 'FIPS', 'Year', 'Median_Household_Income']].copy()
+    
+#     # Add empty rows for 2020, 2024, 2025
+#     states_2019 = final_df[final_df['Year'] == 2019][['State', 'FIPS']].copy()
+#     for year in [2020, 2024, 2025]:
+#         empty = states_2019.copy()
+#         empty['Year'] = year
+#         empty['Median_Household_Income'] = None
+#         final_df = pd.concat([final_df, empty], ignore_index=True)
+    
+#     final_df = final_df.sort_values(['State', 'Year']).reset_index(drop=True)
+    
+#     # Save CSV
+#     output_file = "Q1_household_income_by_state.csv"
+#     final_df.to_csv(output_file, index=False)
+#     print(f"\n Saved: {output_file}")
+    
+#     return final_df
+
+# def fetch_question2_data():
+#     """
+#     Question 2: Household income broken down by education level
+#     Focus on vocational schooling impact
+#     """
+#     print("\n" + "="*70)
+#     print("QUESTION 2: Household Income by Education Level")
+#     print("="*70)
+    
+#     variables = [
+#         "B19013_001E",  # Overall median
+#         "B19037_002E",  # Less than high school
+#         "B19037_003E",  # High school graduate
+#         "B19037_004E",  # Some college or associate's degree (VOCATIONAL)
+#         "B19037_005E",  # Bachelor's degree or higher
+#     ]
+    
+#     years = [2019, 2021, 2022, 2023]
+#     all_data = []
+    
+#     print("Fetching household income by education level...")
+    
+#     for year in years:
+#         print(f"  Downloading {year}...")
+#         df = get_acs_data(year, variables)
+#         if df is not None:
+#             all_data.append(df)
+    
+#     if not all_data:
+#         return None
+    
+#     combined = pd.concat(all_data, ignore_index=True)
+    
+#     combined = combined.rename(columns={
+#         "NAME": "State",
+#         "state": "FIPS",
+#         "B19013_001E": "Overall_Median_Income",
+#         "B19037_002E": "Income_LessThan_HS",
+#         "B19037_003E": "Income_HS_Graduate",
+#         "B19037_004E": "Income_Vocational_Associate",
+#         "B19037_005E": "Income_Bachelors_Plus",
+#     })
+    
+#     # Convert to numeric
+#     income_cols = ['Overall_Median_Income', 'Income_LessThan_HS', 
+#                     'Income_HS_Graduate', 'Income_Vocational_Associate', 
+#                     'Income_Bachelors_Plus']
+    
+#     for col in income_cols:
+#         combined[col] = pd.to_numeric(combined[col], errors='coerce')
+    
+#     # Calculate vocational premium
+#     combined['Vocational_Premium_Dollar'] = (
+#         combined['Income_Vocational_Associate'] - combined['Income_HS_Graduate']
+#     ).round(0)
+    
+#     combined['Vocational_Premium_Percent'] = (
+#         (combined['Income_Vocational_Associate'] / combined['Income_HS_Graduate'] - 1) * 100
+#     ).round(2)
+    
+#     combined['Bachelor_Premium_vs_Vocational'] = (
+#         combined['Income_Bachelors_Plus'] - combined['Income_Vocational_Associate']
+#     ).round(0)
+    
+#     final_df = combined[[
+#         'State', 'FIPS', 'Year',
+#         'Overall_Median_Income',
+#         'Income_LessThan_HS',
+#         'Income_HS_Graduate',
+#         'Income_Vocational_Associate',
+#         'Income_Bachelors_Plus',
+#         'Vocational_Premium_Dollar',
+#         'Vocational_Premium_Percent',
+#         'Bachelor_Premium_vs_Vocational'
+#     ]].copy()
+    
+#     # Add empty rows
+#     states_2019 = final_df[final_df['Year'] == 2019][['State', 'FIPS']].copy()
+#     for year in [2020, 2024, 2025]:
+#         empty = states_2019.copy()
+#         empty['Year'] = year
+#         for col in final_df.columns:
+#             if col not in ['State', 'FIPS', 'Year']:
+#                 empty[col] = None
+#         final_df = pd.concat([final_df, empty], ignore_index=True)
+    
+#     final_df = final_df.sort_values(['State', 'Year']).reset_index(drop=True)
+    
+#     # Save CSV
+#     output_file = "Q2_household_income_by_education.csv"
+#     final_df.to_csv(output_file, index=False)
+#     print(f"\n Saved: {output_file}")
+    
+#     return final_df
+
+# def create_visualizations(q1_data, q2_data):
+#     """
+#     Create comparison graphics between Q1 and Q2
+#     """
+#     print("\n" + "="*70)
+#     print("Creating Visualizations...")
+#     print("="*70)
+    
+#     # Filter to 2023 data for cleaner visuals
+#     q1_2023 = q1_data[q1_data['Year'] == 2023].copy()
+#     q2_2023 = q2_data[q2_data['Year'] == 2023].copy()
+    
+#     # Convert to numeric and drop nulls
+#     q1_2023['Median_Household_Income'] = pd.to_numeric(
+#         q1_2023['Median_Household_Income'], errors='coerce'
+#     )
+#     q1_2023 = q1_2023.dropna(subset=['Median_Household_Income'])
+    
+#     # Convert Q2 income columns to numeric
+#     income_cols = ['Overall_Median_Income', 'Income_LessThan_HS', 
+#                     'Income_HS_Graduate', 'Income_Vocational_Associate', 
+#                     'Income_Bachelors_Plus', 'Vocational_Premium_Dollar']
+#     for col in income_cols:
+#         q2_2023[col] = pd.to_numeric(q2_2023[col], errors='coerce')
+#     q2_2023 = q2_2023.dropna(subset=['Overall_Median_Income'])
+    
+#     # Remove Puerto Rico for cleaner charts
+#     q1_2023 = q1_2023[q1_2023['State'] != 'Puerto Rico']
+#     q2_2023 = q2_2023[q2_2023['State'] != 'Puerto Rico']
+    
+#     # Set style
+#     sns.set_style("whitegrid")
+    
+#     # Figure 1: Q1 vs Q2 - Top 10 States Overall Income
+#     fig1, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+    
+#     # Q1: Simple state income
+#     q1_top10 = q1_2023.nlargest(10, 'Median_Household_Income')
+#     ax1.barh(q1_top10['State'], q1_top10['Median_Household_Income'], color='steelblue')
+#     ax1.set_xlabel('Median Household Income ($)', fontsize=12)
+#     ax1.set_title('Q1: Top 10 States by Median Household Income (2023)', 
+#                     fontsize=14, fontweight='bold')
+#     ax1.invert_yaxis()
+#     for i, v in enumerate(q1_top10['Median_Household_Income']):
+#         ax1.text(v + 1000, i, f'${v:,.0f}', va='center', fontsize=9)
+    
+#     # Q2: Income breakdown by education
+#     q2_top10 = q2_2023.nlargest(10, 'Overall_Median_Income')
+#     x = range(len(q2_top10))
+#     width = 0.2
+    
+#     ax2.barh([i - width*1.5 for i in x], q2_top10['Income_LessThan_HS'], 
+#                     width, label='< High School', color='#d62728')
+#     ax2.barh([i - width*0.5 for i in x], q2_top10['Income_HS_Graduate'], 
+#                 width, label='High School', color='#ff7f0e')
+#     ax2.barh([i + width*0.5 for i in x], q2_top10['Income_Vocational_Associate'], 
+#                 width, label='Vocational/Associate', color='#2ca02c')
+#     ax2.barh([i + width*1.5 for i in x], q2_top10['Income_Bachelors_Plus'], 
+#                 width, label='Bachelor+', color='#1f77b4')
+    
+#     ax2.set_yticks(x)
+#     ax2.set_yticklabels(q2_top10['State'])
+#     ax2.set_xlabel('Median Household Income ($)', fontsize=12)
+#     ax2.set_title('Q2: Top 10 States - Income by Education Level (2023)', 
+#                     fontsize=14, fontweight='bold')
+#     ax2.legend(loc='lower right', fontsize=9)
+#     ax2.invert_yaxis()
+    
+#     plt.tight_layout()
+#     plt.savefig('comparison_Q1_vs_Q2_state_income.png', dpi=300, bbox_inches='tight')
+#     print(" Saved: comparison_Q1_vs_Q2_state_income.png")
+    
+#     # Figure 2: Vocational Education Premium Analysis (Q2 only)
+#     fig2, (ax3, ax4) = plt.subplots(1, 2, figsize=(16, 6))
+    
+#     # Top 10 states by vocational premium
+#     q2_premium = q2_2023.nlargest(10, 'Vocational_Premium_Dollar')
+#     ax3.barh(q2_premium['State'], q2_premium['Vocational_Premium_Dollar'], 
+#                 color='seagreen')
+#     ax3.set_xlabel('Additional Income from Vocational Education ($)', fontsize=12)
+#     ax3.set_title('Q2: Top 10 States - Vocational Premium vs High School (2023)', 
+#                     fontsize=14, fontweight='bold')
+#     ax3.invert_yaxis()
+#     for i, v in enumerate(q2_premium['Vocational_Premium_Dollar']):
+#         ax3.text(v + 500, i, f'${v:,.0f}', va='center', fontsize=9)
+    
+#     # Vocational vs Bachelor's comparison
+#     q2_sample = q2_2023.nlargest(10, 'Income_Vocational_Associate')
+#     x_pos = range(len(q2_sample))
+    
+#     ax4.bar([i - 0.2 for i in x_pos], q2_sample['Income_Vocational_Associate'], 
+#             0.4, label='Vocational/Associate', color='seagreen')
+#     ax4.bar([i + 0.2 for i in x_pos], q2_sample['Income_Bachelors_Plus'], 
+#             0.4, label='Bachelor+', color='royalblue')
+    
+#     ax4.set_xticks(x_pos)
+#     ax4.set_xticklabels(q2_sample['State'], rotation=45, ha='right')
+#     ax4.set_ylabel('Median Household Income ($)', fontsize=12)
+#     ax4.set_title('Q2: Vocational vs Bachelor\'s Degree Income (2023)', 
+#                     fontsize=14, fontweight='bold')
+#     ax4.legend()
+    
+#     plt.tight_layout()
+#     plt.savefig('vocational_education_premium_analysis.png', dpi=300, bbox_inches='tight')
+#     print(" Saved: vocational_education_premium_analysis.png")
+    
+#     # Figure 3: National Average Comparison
+#     fig3, ax5 = plt.subplots(figsize=(10, 6))
+    
+#     # Calculate national averages
+#     q1_avg = q1_2023['Median_Household_Income'].mean()
+#     q2_avg_by_edu = {
+#         'Less than HS': q2_2023['Income_LessThan_HS'].mean(),
+#         'High School': q2_2023['Income_HS_Graduate'].mean(),
+#         'Vocational/\nAssociate': q2_2023['Income_Vocational_Associate'].mean(),
+#         'Bachelor+': q2_2023['Income_Bachelors_Plus'].mean()
+#     }
+    
+#     categories = list(q2_avg_by_edu.keys())
+#     values = list(q2_avg_by_edu.values())
+#     colors = ['#d62728', '#ff7f0e', '#2ca02c', '#1f77b4']
+    
+#     bars = ax5.bar(categories, values, color=colors, alpha=0.8, edgecolor='black')
+#     ax5.axhline(y=q1_avg, color='red', linestyle='--', linewidth=2, 
+#                 label=f'Q1: Overall Average (${q1_avg:,.0f})')
+    
+#     ax5.set_ylabel('Median Household Income ($)', fontsize=12)
+#     ax5.set_title('National Average: Overall (Q1) vs By Education (Q2) - 2023', 
+#                     fontsize=14, fontweight='bold')
+#     ax5.legend(fontsize=10)
+    
+#     # Add value labels
+#     for bar, val in zip(bars, values):
+#         height = bar.get_height()
+#         ax5.text(bar.get_x() + bar.get_width()/2., height,
+#                 f'${val:,.0f}', ha='center', va='bottom', fontsize=10, fontweight='bold')
+    
+#     plt.tight_layout()
+#     plt.savefig('national_average_comparison.png', dpi=300, bbox_inches='tight')
+#     print(" Saved: national_average_comparison.png")
+    
+#     plt.close('all')
+
+# def main():
+#     """
+#     Main function to fetch both datasets and create visualizations
+#     """
+#     print("\n" + "="*70)
+#     print("CENSUS DATA ANALYSIS: TWO SEPARATE QUESTIONS")
+#     print("="*70)
+    
+#     # Fetch Q1 data
+#     q1_data = fetch_question1_data()
+    
+#     # Fetch Q2 data
+#     q2_data = fetch_question2_data()
+    
+#     if q1_data is not None and q2_data is not None:
+#         # Create visualizations
+#         create_visualizations(q1_data, q2_data)
+        
+#         print("\n" + "="*70)
+#         print("SUMMARY")
+#         print("="*70)
+#         print("\n QUESTION 1 OUTPUT:")
+#         print("   File: Q1_household_income_by_state.csv")
+#         print("   Content: Simple state-level median household income")
+#         print("   Columns: State, FIPS, Year, Median_Household_Income")
+        
+#         print("\n QUESTION 2 OUTPUT:")
+#         print("   File: Q2_household_income_by_education.csv")
+#         print("   Content: Household income broken down by education level")
+#         print("   Columns: State, FIPS, Year, Income by education levels,")
+#         print("            Vocational premium calculations")
+        
+#         print("\n VISUALIZATIONS:")
+#         print("   1. comparison_Q1_vs_Q2_state_income.png")
+#         print("   2. vocational_education_premium_analysis.png")
+#         print("   3. national_average_comparison.png")
+#         print("="*70)
+#     else:
+#         print("\n Error: Could not retrieve data. Check API key and connection.")
+
+# if __name__ == "__main__":
+#     main()
+    
+#OBSERVATIONS FOR ALL YEARS
+import pandas as pd
+import requests
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Census API base URL
+BASE_URL = "https://api.census.gov/data"
+
+# Add your Census API key here
+API_KEY = "116072db51d1d74ed352c58afeea90b570ea69ec"
+
+def get_acs_data(year, variables, geography="state:*"):
+    """
+    Fetch data from Census ACS 1-Year API
+    """
+    url = f"{BASE_URL}/{year}/acs/acs1"
+    
+    params = {
+        "get": ",".join(["NAME"] + variables),
+        "for": geography
+    }
+    
+    if API_KEY:
+        params["key"] = API_KEY
+    
+    try:
+        response = requests.get(url, params=params)
+        response.raise_for_status()
+        data = response.json()
+        
+        df = pd.DataFrame(data[1:], columns=data[0])
+        df['Year'] = year
+        return df
+    except Exception as e:
+        print(f"Error fetching {year} data: {e}")
+        return None
+
+def fetch_question1_data():
+    """
+    Question 1: Average household income on state level (geographic/census data)
+    Simple state-level median household income
+    """
+    print("\n" + "="*70)
+    print("QUESTION 1: Average Household Income by State")
+    print("="*70)
+    
+    variables = ["B19013_001E"]  # Overall median household income only
+    
+    years = [2019, 2021, 2022, 2023]
+    all_data = []
+    
+    print("Fetching state-level median household income...")
+    
+    for year in years:
+        print(f"  Downloading {year}...")
+        df = get_acs_data(year, variables)
+        if df is not None:
+            all_data.append(df)
+    
+    if not all_data:
+        return None
+    
+    combined = pd.concat(all_data, ignore_index=True)
+    
+    combined = combined.rename(columns={
+        "NAME": "State",
+        "state": "FIPS",
+        "B19013_001E": "Median_Household_Income"
+    })
+    
+    combined['Median_Household_Income'] = pd.to_numeric(
+        combined['Median_Household_Income'], errors='coerce'
+    )
+    
+    final_df = combined[['State', 'FIPS', 'Year', 'Median_Household_Income']].copy()
+    
+    # Add empty rows for 2020, 2024, 2025
+    states_2019 = final_df[final_df['Year'] == 2019][['State', 'FIPS']].copy()
+    for year in [2020, 2024, 2025]:
+        empty = states_2019.copy()
+        empty['Year'] = year
+        empty['Median_Household_Income'] = None
+        final_df = pd.concat([final_df, empty], ignore_index=True)
+    
+    final_df = final_df.sort_values(['State', 'Year']).reset_index(drop=True)
+    
+    # Save CSV
+    output_file = "Q1_household_income_by_state.csv"
+    final_df.to_csv(output_file, index=False)
+    print(f"\n Saved: {output_file}")
+    
+    return final_df
+
+def fetch_question2_data():
+    """
+    Question 2: Household income broken down by education level
+    Focus on vocational schooling impact
+    """
+    print("\n" + "="*70)
+    print("QUESTION 2: Household Income by Education Level")
+    print("="*70)
+    
+    variables = [
+        "B19013_001E",  # Overall median
+        "B19037_002E",  # Less than high school
+        "B19037_003E",  # High school graduate
+        "B19037_004E",  # Some college or associate's degree (VOCATIONAL)
+        "B19037_005E",  # Bachelor's degree or higher
+    ]
+    
+    years = [2019, 2021, 2022, 2023]
+    all_data = []
+    
+    print("Fetching household income by education level...")
+    
+    for year in years:
+        print(f"  Downloading {year}...")
+        df = get_acs_data(year, variables)
+        if df is not None:
+            all_data.append(df)
+    
+    if not all_data:
+        return None
+    
+    combined = pd.concat(all_data, ignore_index=True)
+    
+    combined = combined.rename(columns={
+        "NAME": "State",
+        "state": "FIPS",
+        "B19013_001E": "Overall_Median_Income",
+        "B19037_002E": "Income_LessThan_HS",
+        "B19037_003E": "Income_HS_Graduate",
+        "B19037_004E": "Income_Vocational_Associate",
+        "B19037_005E": "Income_Bachelors_Plus",
+    })
+    
+    # Convert to numeric
+    income_cols = ['Overall_Median_Income', 'Income_LessThan_HS', 
+                    'Income_HS_Graduate', 'Income_Vocational_Associate', 
+                    'Income_Bachelors_Plus']
+    
+    for col in income_cols:
+        combined[col] = pd.to_numeric(combined[col], errors='coerce')
+    
+    # Calculate vocational premium
+    combined['Vocational_Premium_Dollar'] = (
+        combined['Income_Vocational_Associate'] - combined['Income_HS_Graduate']
+    ).round(0)
+    
+    combined['Vocational_Premium_Percent'] = (
+        (combined['Income_Vocational_Associate'] / combined['Income_HS_Graduate'] - 1) * 100
+    ).round(2)
+    
+    combined['Bachelor_Premium_vs_Vocational'] = (
+        combined['Income_Bachelors_Plus'] - combined['Income_Vocational_Associate']
+    ).round(0)
+    
+    final_df = combined[[
+        'State', 'FIPS', 'Year',
+        'Overall_Median_Income',
+        'Income_LessThan_HS',
+        'Income_HS_Graduate',
+        'Income_Vocational_Associate',
+        'Income_Bachelors_Plus',
+        'Vocational_Premium_Dollar',
+        'Vocational_Premium_Percent',
+        'Bachelor_Premium_vs_Vocational'
+    ]].copy()
+    
+    # Add empty rows
+    states_2019 = final_df[final_df['Year'] == 2019][['State', 'FIPS']].copy()
+    for year in [2020, 2024, 2025]:
+        empty = states_2019.copy()
+        empty['Year'] = year
+        for col in final_df.columns:
+            if col not in ['State', 'FIPS', 'Year']:
+                empty[col] = None
+        final_df = pd.concat([final_df, empty], ignore_index=True)
+    
+    final_df = final_df.sort_values(['State', 'Year']).reset_index(drop=True)
+    
+    # Save CSV
+    output_file = "Q2_household_income_by_education.csv"
+    final_df.to_csv(output_file, index=False)
+    print(f"\n Saved: {output_file}")
+    
+    return final_df
+
+def create_visualizations(q1_data, q2_data):
+    """
+    Create comparison graphics between Q1 and Q2 for 2019-2023
+    """
+    print("\n" + "="*70)
+    print("Creating Visualizations...")
+    print("="*70)
+    
+    # Filter to available years (2019, 2021, 2022, 2023)
+    available_years = [2019, 2021, 2022, 2023]
+    
+    # Set style
+    sns.set_style("whitegrid")
+    
+    # ===== FIGURE 1: State Income Trends Over Time (Q1 vs Q2) =====
+    fig1, (ax1, ax2) = plt.subplots(2, 1, figsize=(14, 10))
+    
+    # Q1: Top 10 states average income over time
+    q1_clean = q1_data[q1_data['Year'].isin(available_years)].copy()
+    q1_clean['Median_Household_Income'] = pd.to_numeric(
+        q1_clean['Median_Household_Income'], errors='coerce'
+    )
+    q1_clean = q1_clean.dropna(subset=['Median_Household_Income'])
+    q1_clean = q1_clean[q1_clean['State'] != 'Puerto Rico']
+    
+    # Get top 10 states by 2023 income
+    top10_states = q1_clean[q1_clean['Year'] == 2023].nlargest(
+        10, 'Median_Household_Income'
+    )['State'].tolist()
+    
+    q1_top10 = q1_clean[q1_clean['State'].isin(top10_states)]
+    
+    for state in top10_states:
+        state_data = q1_top10[q1_top10['State'] == state]
+        ax1.plot(state_data['Year'], state_data['Median_Household_Income'], 
+                marker='o', linewidth=2, label=state)
+    
+    ax1.set_xlabel('Year', fontsize=12)
+    ax1.set_ylabel('Median Household Income ($)', fontsize=12)
+    ax1.set_title('Q1: Top 10 States - Median Household Income Trend (2019-2023)', 
+                    fontsize=14, fontweight='bold')
+    ax1.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=9)
+    ax1.grid(True, alpha=0.3)
+    
+    # Q2: National average by education level over time
+    q2_clean = q2_data[q2_data['Year'].isin(available_years)].copy()
+    income_cols = ['Income_LessThan_HS', 'Income_HS_Graduate', 
+                    'Income_Vocational_Associate', 'Income_Bachelors_Plus']
+    for col in income_cols:
+        q2_clean[col] = pd.to_numeric(q2_clean[col], errors='coerce')
+    q2_clean = q2_clean[q2_clean['State'] != 'Puerto Rico']
+    
+    # Calculate national averages by year
+    national_avg = q2_clean.groupby('Year')[income_cols].mean().reset_index()
+    
+    ax2.plot(national_avg['Year'], national_avg['Income_LessThan_HS'], 
+            marker='o', linewidth=2, label='Less than HS', color='#d62728')
+    ax2.plot(national_avg['Year'], national_avg['Income_HS_Graduate'], 
+            marker='o', linewidth=2, label='High School', color='#ff7f0e')
+    ax2.plot(national_avg['Year'], national_avg['Income_Vocational_Associate'], 
+            marker='o', linewidth=2, label='Vocational/Associate', color='#2ca02c')
+    ax2.plot(national_avg['Year'], national_avg['Income_Bachelors_Plus'], 
+            marker='o', linewidth=2, label='Bachelor+', color='#1f77b4')
+    
+    ax2.set_xlabel('Year', fontsize=12)
+    ax2.set_ylabel('Median Household Income ($)', fontsize=12)
+    ax2.set_title('Q2: National Average Income by Education Level (2019-2023)', 
+                    fontsize=14, fontweight='bold')
+    ax2.legend(fontsize=10)
+    ax2.grid(True, alpha=0.3)
+    
+    plt.tight_layout()
+    plt.savefig('trends_2019_2023_Q1_vs_Q2.png', dpi=300, bbox_inches='tight')
+    print(" Saved: trends_2019_2023_Q1_vs_Q2.png")
+    plt.close()
+    
+    # ===== FIGURE 2: Vocational Premium Growth Over Time =====
+    fig2, (ax3, ax4) = plt.subplots(1, 2, figsize=(16, 6))
+    
+    q2_clean['Vocational_Premium_Dollar'] = pd.to_numeric(
+        q2_clean['Vocational_Premium_Dollar'], errors='coerce'
+    )
+    
+    # National average vocational premium over time
+    national_premium = q2_clean.groupby('Year')['Vocational_Premium_Dollar'].mean()
+    
+    ax3.bar(national_premium.index, national_premium.values, color='seagreen', alpha=0.7)
+    ax3.plot(national_premium.index, national_premium.values, 
+            marker='o', color='darkgreen', linewidth=2, markersize=8)
+    ax3.set_xlabel('Year', fontsize=12)
+    ax3.set_ylabel('Average Vocational Premium ($)', fontsize=12)
+    ax3.set_title('Q2: National Average Vocational Premium Growth (2019-2023)', 
+                    fontsize=14, fontweight='bold')
+    ax3.grid(True, alpha=0.3, axis='y')
+    
+    # Add value labels
+    for year, val in zip(national_premium.index, national_premium.values):
+        ax3.text(year, val + 500, f'${val:,.0f}', ha='center', fontsize=10, fontweight='bold')
+    
+    # Top 5 states vocational premium over time
+    top5_premium_states = q2_clean[q2_clean['Year'] == 2023].nlargest(
+        5, 'Vocational_Premium_Dollar'
+    )['State'].tolist()
+    
+    q2_top5 = q2_clean[q2_clean['State'].isin(top5_premium_states)]
+    
+    for state in top5_premium_states:
+        state_data = q2_top5[q2_top5['State'] == state]
+        ax4.plot(state_data['Year'], state_data['Vocational_Premium_Dollar'], 
+                marker='o', linewidth=2, label=state)
+    
+    ax4.set_xlabel('Year', fontsize=12)
+    ax4.set_ylabel('Vocational Premium ($)', fontsize=12)
+    ax4.set_title('Q2: Top 5 States - Vocational Premium Trend (2019-2023)', 
+                    fontsize=14, fontweight='bold')
+    ax4.legend(fontsize=10)
+    ax4.grid(True, alpha=0.3)
+    
+    plt.tight_layout()
+    plt.savefig('vocational_premium_trends_2019_2023.png', dpi=300, bbox_inches='tight')
+    print(" Saved: vocational_premium_trends_2019_2023.png")
+    plt.close()
+    
+    # ===== FIGURE 3: Year-by-Year Comparison (2019, 2021, 2022, 2023) =====
+    fig3, axes = plt.subplots(2, 2, figsize=(16, 12))
+    axes = axes.flatten()
+    
+    for idx, year in enumerate(available_years):
+        ax = axes[idx]
+        
+        # Get data for this year
+        q2_year = q2_clean[q2_clean['Year'] == year].copy()
+        
+        # Calculate national average for each education level
+        avg_data = {
+            'Less than HS': q2_year['Income_LessThan_HS'].mean(),
+            'High School': q2_year['Income_HS_Graduate'].mean(),
+            'Vocational/\nAssociate': q2_year['Income_Vocational_Associate'].mean(),
+            'Bachelor+': q2_year['Income_Bachelors_Plus'].mean()
+        }
+        
+        categories = list(avg_data.keys())
+        values = list(avg_data.values())
+        colors = ['#d62728', '#ff7f0e', '#2ca02c', '#1f77b4']
+        
+        bars = ax.bar(categories, values, color=colors, alpha=0.8, edgecolor='black')
+        ax.set_ylabel('Median Household Income ($)', fontsize=11)
+        ax.set_title(f'Q2: National Average by Education - {year}', 
+                    fontsize=12, fontweight='bold')
+        ax.set_ylim(0, max(values) * 1.15)
+        
+        # Add value labels
+        for bar, val in zip(bars, values):
+            height = bar.get_height()
+            ax.text(bar.get_x() + bar.get_width()/2., height,
+                    f'${val:,.0f}', ha='center', va='bottom', fontsize=9, fontweight='bold')
+    
+    plt.tight_layout()
+    plt.savefig('yearly_comparison_2019_2023.png', dpi=300, bbox_inches='tight')
+    print(" Saved: yearly_comparison_2019_2023.png")
+    plt.close()
+    
+    # ===== FIGURE 4: Heatmap - Vocational Premium by State Over Time =====
+    fig4, ax5 = plt.subplots(figsize=(12, 16))
+    
+    # Create pivot table for heatmap
+    heatmap_data = q2_clean.pivot_table(
+        index='State', 
+        columns='Year', 
+        values='Vocational_Premium_Dollar'
+    )
+    
+    # Sort by 2023 values
+    if 2023 in heatmap_data.columns:
+        heatmap_data = heatmap_data.sort_values(by=2023, ascending=False)
+    
+    sns.heatmap(heatmap_data, annot=True, fmt='.0f', cmap='RdYlGn', 
+                cbar_kws={'label': 'Vocational Premium ($)'}, ax=ax5, 
+                linewidths=0.5, linecolor='gray')
+    
+    ax5.set_title('Q2: Vocational Education Premium by State (2019-2023)', 
+                    fontsize=14, fontweight='bold', pad=20)
+    ax5.set_xlabel('Year', fontsize=12)
+    ax5.set_ylabel('State', fontsize=12)
+    
+    plt.tight_layout()
+    plt.savefig('heatmap_vocational_premium_by_state.png', dpi=300, bbox_inches='tight')
+    print(" Saved: heatmap_vocational_premium_by_state.png")
+    plt.close()
+    
+    print("\n All visualizations created successfully!")
+
+def main():
+    """
+    Main function to fetch both datasets and create visualizations
+    """
+    print("\n" + "="*70)
+    print("CENSUS DATA ANALYSIS: TWO SEPARATE QUESTIONS")
+    print("="*70)
+    
+    # Fetch Q1 data
+    q1_data = fetch_question1_data()
+    
+    # Fetch Q2 data
+    q2_data = fetch_question2_data()
+    
+    if q1_data is not None and q2_data is not None:
+        # Create visualizations
+        create_visualizations(q1_data, q2_data)
+        
+        print("\n" + "="*70)
+        print("SUMMARY")
+        print("="*70)
+        print("\n QUESTION 1 OUTPUT:")
+        print("   File: Q1_household_income_by_state.csv")
+        print("   Content: Simple state-level median household income")
+        print("   Columns: State, FIPS, Year, Median_Household_Income")
+        
+        print("\n QUESTION 2 OUTPUT:")
+        print("   File: Q2_household_income_by_education.csv")
+        print("   Content: Household income broken down by education level")
+        print("   Columns: State, FIPS, Year, Income by education levels,")
+        print("            Vocational premium calculations")
+        
+        print("\n VISUALIZATIONS:")
+        print("   1. comparison_Q1_vs_Q2_state_income.png")
+        print("   2. vocational_education_premium_analysis.png")
+        print("   3. national_average_comparison.png")
+        print("="*70)
+    else:
+        print("\n Error: Could not retrieve data. Check API key and connection.")
+
+if __name__ == "__main__":
+    main()
