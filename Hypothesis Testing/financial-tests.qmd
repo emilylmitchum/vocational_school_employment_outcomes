@@ -107,8 +107,6 @@ tuition_df <- tuition_df |>
     degree_granting == "Non-Degree Granting" ~ "Vocational",
     TRUE ~ "NA"
   ))
-
-tuition_df
 ```
 
 Join Dataframes together to assess ROI
@@ -125,23 +123,94 @@ roi_yearly <- roi_df %>%
   summarize(ROI = mean(ROI), .groups = "drop") %>%
   arrange(degree_category, year)
 
-plot <- plot_ly(
-  roi_yearly,
-  x = ~year,
-  y = ~ROI,
-  color = ~degree_category,
-  colors = c("Bachelor's" = "#E64B35", "Vocational" = "#4DBBD5"),
-  type = 'scatter',
-  mode = 'lines+markers'
-) %>%
+roi_clean <- merged_df |>
+  dplyr::group_by(degree_category, year) |>
+  dplyr::summarise(
+    annual_earnings = mean(median_weekly_earnings) * 52,
+    tuition  = mean(average_tuition),
+    ROI      = annual_earnings / tuition,  # annualized ROI
+    .groups = "drop"
+  )
+
+
+# plot <- plot_ly(
+#   roi_clean,
+#   x = ~year,
+#   y = ~ROI,
+#   color = ~degree_category,
+#   colors = c("Bachelor's" = "#E64B35", "Vocational" = "#4DBBD5"),
+#   type = 'scatter',
+#   mode = 'lines+markers'
+# ) %>%
+#   layout(
+#     title = "Return on Investment (ROI) Over Time",
+#     xaxis = list(title = "Year"),
+#     yaxis = list(title = "ROI (Median Weekly Earnings / Tuition)"),
+#     legend = list(title = list(text = "<b>Degree Type</b>"))
+#   )
+
+# htmlwidgets::saveWidget(plot, "roi_plot.html")
+
+# roi_yearly
+```
+
+```{r}
+library(plotly)
+
+plot <- plot_ly(roi_clean, x = ~year) %>%
+  add_trace(
+    y = ~ROI,
+    color = ~degree_category,
+    colors = c("Bachelor's" = "#E64B35", "Vocational" = "#4DBBD5"),
+    type = "scatter",
+    mode = "lines+markers",
+    name = ~paste(degree_category, "ROI"),
+    yaxis = "y"
+  ) %>%
+
+  add_trace(
+    y = ~annual_earnings,
+    x = ~year,
+    split = ~degree_category,
+    type = "bar",
+    name = ~paste(degree_category, "Earnings"),
+    opacity = 0.4,
+    yaxis = "y2",
+    showlegend = TRUE
+  ) %>%
+
+  add_trace(
+    y = ~tuition,
+    x = ~year,
+    split = ~degree_category,
+    type = "bar",
+    name = ~paste(degree_category, "Tuition"),
+    opacity = 0.4,
+    yaxis = "y2",
+    showlegend = TRUE
+  ) %>%
   layout(
-    title = "Return on Investment (ROI) Over Time",
+    title = "ROI with Earnings and Tuition Over Time",
+    barmode = "group",
     xaxis = list(title = "Year"),
-    yaxis = list(title = "ROI (Median Weekly Earnings / Tuition)"),
-    legend = list(title = list(text = "<b>Degree Type</b>"))
+    yaxis = list(
+      title = "ROI (Earnings / Tuition)",
+      rangemode = "tozero"
+    ),
+    yaxis2 = list(
+      title = "Dollars (Earnings & Tuition)",
+      overlaying = "y",
+      side = "right",
+      rangemode = "tozero"
+    ),
+    legend = list(title = list(text = "<b>Series</b>"))
   )
 
 htmlwidgets::saveWidget(plot, "roi_plot.html")
 
-roi_yearly
+plot
+```
+
+```{r}
+roi_clean
 ```
