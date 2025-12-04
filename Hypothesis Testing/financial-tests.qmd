@@ -25,6 +25,9 @@ head(earnings_df)
 
 tuition_df <- read.csv('/Users/Emi/Library/CloudStorage/GoogleDrive-emilymitchum265@gmail.com/Shared drives/DSAN/DSAN 5100/Final Project/vocational_school_employment_outcomes/Cleaned data/Cleaned_tuition_data.csv')
 head(tuition_df)
+
+unemp_emp_ratio_df <- read.csv('/Users/Emi/Library/CloudStorage/GoogleDrive-emilymitchum265@gmail.com/Shared drives/DSAN/DSAN 5100/Final Project/vocational_school_employment_outcomes/Cleaned data/Cleaned_monthly_unemployment_&_employment_ratio_data.csv')
+head(unemp_emp_ratio_df )
 ```
 
 # ANOVA on Quarterly Median Weekly Earnings Data
@@ -73,12 +76,26 @@ ggplot(earnings_df, aes(
 
 ## One-Way ANOVA (Ignoring Time)
 
+Check for equal variances
+```{r}
+library(car)
+leveneTest(median_weekly_earnings ~ education_level, data = earnings_df)
+
+leveneTest(median_weekly_earnings ~ education_level * year, data = earnings_df)
+
+```
+
 ```{r}
 oneway <- aov(median_weekly_earnings ~ education_level, data = earnings_df)
 summary(oneway)
 ```
 
 The one-way ANOVA test revealed a highly significant effect of education level on median weekly earnings. This indicates that mean earnings differ substantially across the three education groups.
+
+```{r}
+# Welch's ANOVA
+oneway.test(median_weekly_earnings ~ education_level, data = earnings_df)
+```
 
 ## **Two-Way ANOVA (Analyzing Effect of Education Level & Time)**
 
@@ -91,8 +108,15 @@ summary(model_two_way)
 Bachelor’s degree holders consistently earn much more than those with some college/associate degrees, who in turn earn more than those with only a high school diploma.
 
 ```{r}
-# map <- c("Non-Degree Granting" = "Vocational", "Degree Granting" = "Traditional Bachelor's")
+#Games-Howell Test
+library(rstatix)
 
+earnings_df |> games_howell_test(median_weekly_earnings ~ education_level)
+```
+
+## ROI Analysis
+
+```{r}
 limited_earnings_df <- earnings_df[earnings_df$education_level != "high_school",] 
 
 limited_earnings_df <- limited_earnings_df |> 
@@ -132,26 +156,6 @@ roi_clean <- merged_df |>
     .groups = "drop"
   )
 
-
-# plot <- plot_ly(
-#   roi_clean,
-#   x = ~year,
-#   y = ~ROI,
-#   color = ~degree_category,
-#   colors = c("Bachelor's" = "#E64B35", "Vocational" = "#4DBBD5"),
-#   type = 'scatter',
-#   mode = 'lines+markers'
-# ) %>%
-#   layout(
-#     title = "Return on Investment (ROI) Over Time",
-#     xaxis = list(title = "Year"),
-#     yaxis = list(title = "ROI (Median Weekly Earnings / Tuition)"),
-#     legend = list(title = list(text = "<b>Degree Type</b>"))
-#   )
-
-# htmlwidgets::saveWidget(plot, "roi_plot.html")
-
-# roi_yearly
 ```
 
 ```{r}
@@ -206,11 +210,42 @@ plot <- plot_ly(roi_clean, x = ~year) %>%
     legend = list(title = list(text = "<b>Series</b>"))
   )
 
-htmlwidgets::saveWidget(plot, "roi_plot.html")
+# htmlwidgets::saveWidget(plot, "roi_plot.html")
 
 plot
 ```
 
+## Time Series Analysis Using Employment Population Ratio
 ```{r}
-roi_clean
+
+```
+
+```{r}
+unemp_emp_ratio_df$date <- as.Date(unemp_emp_ratio_df$date, "%Y-%m-%d")
+unemp_emp_ratio_df$employment_population_ratio <- as.numeric(unemp_emp_ratio_df$employment_population_ratio)
+
+fig <- plot_ly(
+  unemp_emp_ratio_df,
+  x = ~date,
+  y = ~employment_population_ratio,
+  color = ~education_level,        
+  colors = c(
+    "ba_plus" = "#E64B35",
+    "some_college_assoc" = "#4DBBD5",
+    "high_school" = "#00A087"
+  ),
+  type = 'scatter',
+  mode = 'lines'
+)
+
+fig <- fig %>%
+  layout(
+    title = "Employment Population Ratio (2019–2025)",
+    xaxis = list(title = "Date"),
+    yaxis = list(title = "Employment-Population Ratio"),
+    legend = list(title = list(text = "<b>Education Level</b>"))
+  )
+
+fig
+
 ```
