@@ -22,6 +22,9 @@ library(dplyr)
 ```{r}
 earnings_df <-read.csv('/Users/Emi/Library/CloudStorage/GoogleDrive-emilymitchum265@gmail.com/Shared drives/DSAN/DSAN 5100/Final Project/vocational_school_employment_outcomes/Cleaned data/Cleaned_quarterly_earnings_data.csv')
 head(earnings_df)
+
+tuition_df <- read.csv('/Users/Emi/Library/CloudStorage/GoogleDrive-emilymitchum265@gmail.com/Shared drives/DSAN/DSAN 5100/Final Project/vocational_school_employment_outcomes/Cleaned data/Cleaned_tuition_data.csv')
+head(tuition_df)
 ```
 
 # ANOVA on Quarterly Median Weekly Earnings Data
@@ -33,19 +36,39 @@ earnings_df <- earnings_df %>%
     year = factor(format(as.Date(date), "%Y")),
     education_level = factor(education_level)
   )
+
+tuition_df <- tuition_df |> mutate(year = factor(format(as.Date(year_parsed), "%Y")))
 ```
 
 ## Visual Analysis of Earnings by Education Level
 
 ```{r}
-ggplot(earnings_df, aes(x = education_level, y = median_weekly_earnings, fill = education_level )) +
-  geom_boxplot(alpha = 0.8, outlier.color = "gray40") +
+library(ggplot2)
+
+ggplot(earnings_df, aes(
+  x = education_level,
+  y = median_weekly_earnings,
+  fill = education_level
+)) +
+  geom_boxplot(alpha = 0.85, outlier.color = "gray40") +
+  scale_fill_brewer(palette = "Set2") +   # cleaner, professional palette
   labs(
     title = "Median Weekly Earnings by Education Level",
     x = "Education Level",
-    y = "Median Weekly Earnings",
-    fill = "Education Level"
-  ) 
+    y = "Median Weekly Earnings"
+  ) +
+  theme_minimal(base_size = 16) +         # larger base text for slides
+  theme(
+    text = element_text(family = "Helvetica", face = "bold"),
+    plot.title = element_text(size = 22, face = "bold", hjust = 0.5),
+    axis.title.x = element_text(size = 18, face = "bold"),
+    axis.title.y = element_text(size = 18, face = "bold"),
+    axis.text.x = element_text(size = 14, face = "bold", angle = 20, hjust = 1),
+    axis.text.y = element_text(size = 14, face = "bold"),
+    legend.position = "none",             # removes redundant legend
+    panel.grid.major.x = element_blank()  # cleaner slide aesthetic
+  )
+
 ```
 
 ## One-Way ANOVA (Ignoring Time)
@@ -66,3 +89,59 @@ summary(model_two_way)
 ```
 
 Bachelor’s degree holders consistently earn much more than those with some college/associate degrees, who in turn earn more than those with only a high school diploma.
+
+```{r}
+# map <- c("Non-Degree Granting" = "Vocational", "Degree Granting" = "Traditional Bachelor's")
+
+limited_earnings_df <- earnings_df[earnings_df$education_level != "high_school",] 
+
+limited_earnings_df <- limited_earnings_df |> 
+  mutate(degree_category = case_when(
+    education_level == "ba_only" ~ "Bachelor's",education_level == "some_college_assoc" ~ "Vocational",
+    TRUE ~ "NA"
+  ))
+
+tuition_df <- tuition_df |> 
+  mutate(degree_category = case_when(
+    degree_granting == "Degree Granting" ~ "Bachelor's",
+    degree_granting == "Non-Degree Granting" ~ "Vocational",
+    TRUE ~ "NA"
+  ))
+
+tuition_df
+```
+
+Join Dataframes together to assess ROI
+```{r}
+temp_earnings_df <- limited_earnings_df |> select(c("median_weekly_earnings","year","degree_category"))
+temp_tuition_df <- tuition_df |> select(c("average_tuition","year","degree_category"))
+
+merged_df <- merge(temp_earnings_df, temp_tuition_df, by = c("degree_category","year"))
+
+roi_df <- merged_df |> mutate( ROI = median_weekly_earnings / average_tuition )
+
+roi_yearly <- roi_df %>%
+  group_by(degree_category, year) %>%
+  summarize(ROI = mean(ROI), .groups = "drop") %>%
+  arrange(degree_category, year)
+
+plot <- plot_ly(
+  roi_yearly,
+  x = ~year,
+  y = ~ROI,
+  color = ~degree_category,
+  colors = c("Bachelor's" = "#E64B35", "Vocational" = "#4DBBD5"),
+  type = 'scatter',
+  mode = 'lines+markers'
+) %>%
+  layout(
+    title = "Return on Investment (ROI) Over Time",
+    xaxis = list(title = "Year"),
+    yaxis = list(title = "ROI (Median Weekly Earnings / Tuition)"),
+    legend = list(title = list(text = "<b>Degree Type</b>"))
+  )
+
+htmlwidgets::saveWidget(plot, "roi_plot.html")
+
+roi_yearly
+```
