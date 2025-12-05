@@ -26,8 +26,8 @@ head(earnings_df)
 tuition_df <- read.csv('/Users/Emi/Library/CloudStorage/GoogleDrive-emilymitchum265@gmail.com/Shared drives/DSAN/DSAN 5100/Final Project/vocational_school_employment_outcomes/Cleaned data/Cleaned_tuition_data.csv')
 head(tuition_df)
 
-unemp_emp_ratio_df <- read.csv('/Users/Emi/Library/CloudStorage/GoogleDrive-emilymitchum265@gmail.com/Shared drives/DSAN/DSAN 5100/Final Project/vocational_school_employment_outcomes/Cleaned data/Cleaned_monthly_unemployment_&_employment_ratio_data.csv')
-head(unemp_emp_ratio_df )
+emp_ratio_df <- read.csv('/Users/Emi/Library/CloudStorage/GoogleDrive-emilymitchum265@gmail.com/Shared drives/DSAN/DSAN 5100/Final Project/vocational_school_employment_outcomes/Cleaned data/Cleaned_monthly_emp_pop_ratio.csv')
+head(emp_ratio_df)
 ```
 
 # ANOVA on Quarterly Median Weekly Earnings Data
@@ -77,6 +77,7 @@ ggplot(earnings_df, aes(
 ## One-Way ANOVA (Ignoring Time)
 
 Check for equal variances
+
 ```{r}
 library(car)
 leveneTest(median_weekly_earnings ~ education_level, data = earnings_df)
@@ -134,6 +135,7 @@ tuition_df <- tuition_df |>
 ```
 
 Join Dataframes together to assess ROI
+
 ```{r}
 temp_earnings_df <- limited_earnings_df |> select(c("median_weekly_earnings","year","degree_category"))
 temp_tuition_df <- tuition_df |> select(c("average_tuition","year","degree_category"))
@@ -216,16 +218,15 @@ plot
 ```
 
 ## Time Series Analysis Using Employment Population Ratio
-```{r}
-
-```
 
 ```{r}
-unemp_emp_ratio_df$date <- as.Date(unemp_emp_ratio_df$date, "%Y-%m-%d")
-unemp_emp_ratio_df$employment_population_ratio <- as.numeric(unemp_emp_ratio_df$employment_population_ratio)
+
+emp_ratio_df$date <- as.Date(emp_ratio_df$date, "%Y-%m-%d")
+emp_ratio_df$employment_population_ratio <- as.numeric(emp_ratio_df$employment_population_ratio)
+max <- max(emp_ratio_df$employment_population_ratio)
 
 fig <- plot_ly(
-  unemp_emp_ratio_df,
+  emp_ratio_df,
   x = ~date,
   y = ~employment_population_ratio,
   color = ~education_level,        
@@ -238,13 +239,30 @@ fig <- plot_ly(
   mode = 'lines'
 )
 
-fig <- fig %>%
+fig <- fig |>
   layout(
     title = "Employment Population Ratio (2019–2025)",
     xaxis = list(title = "Date"),
     yaxis = list(title = "Employment-Population Ratio"),
-    legend = list(title = list(text = "<b>Education Level</b>"))
+    legend = list(title = list(text = "<b>Education Level</b>")),
+    shapes = list(
+      list(type = 'rect',
+           x0 = "2019-12-01", x1 = "2020-12-01",
+           y0 = 40, y1 = max,
+           line = list(color = 'rgba(0, 0, 255, 0.5)', width = 2),
+           fillcolor = 'rgba(0, 0, 255, 0.2)')
+    ),
+    annotations = list(
+      list(
+        x = "2020-06-01",
+        y = max + 2,
+        text = "COVID-19",
+        showarrow = FALSE,
+        font = list(color = 'black', size = 12)
+      )
   )
+)
+
 
 fig
 
