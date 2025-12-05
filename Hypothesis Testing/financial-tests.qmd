@@ -22,6 +22,12 @@ library(dplyr)
 ```{r}
 earnings_df <-read.csv('/Users/Emi/Library/CloudStorage/GoogleDrive-emilymitchum265@gmail.com/Shared drives/DSAN/DSAN 5100/Final Project/vocational_school_employment_outcomes/Cleaned data/Cleaned_quarterly_earnings_data.csv')
 head(earnings_df)
+
+tuition_df <- read.csv('/Users/Emi/Library/CloudStorage/GoogleDrive-emilymitchum265@gmail.com/Shared drives/DSAN/DSAN 5100/Final Project/vocational_school_employment_outcomes/Cleaned data/Cleaned_tuition_data.csv')
+head(tuition_df)
+
+emp_ratio_df <- read.csv('/Users/Emi/Library/CloudStorage/GoogleDrive-emilymitchum265@gmail.com/Shared drives/DSAN/DSAN 5100/Final Project/vocational_school_employment_outcomes/Cleaned data/Cleaned_monthly_emp_pop_ratio.csv')
+head(emp_ratio_df)
 ```
 
 # ANOVA on Quarterly Median Weekly Earnings Data
@@ -33,22 +39,52 @@ earnings_df <- earnings_df %>%
     year = factor(format(as.Date(date), "%Y")),
     education_level = factor(education_level)
   )
+
+tuition_df <- tuition_df |> mutate(year = factor(format(as.Date(year_parsed), "%Y")))
 ```
 
 ## Visual Analysis of Earnings by Education Level
 
 ```{r}
-ggplot(earnings_df, aes(x = education_level, y = median_weekly_earnings, fill = education_level )) +
-  geom_boxplot(alpha = 0.8, outlier.color = "gray40") +
+library(ggplot2)
+
+ggplot(earnings_df, aes(
+  x = education_level,
+  y = median_weekly_earnings,
+  fill = education_level
+)) +
+  geom_boxplot(alpha = 0.85, outlier.color = "gray40") +
+  scale_fill_brewer(palette = "Set2") +   # cleaner, professional palette
   labs(
     title = "Median Weekly Earnings by Education Level",
     x = "Education Level",
-    y = "Median Weekly Earnings",
-    fill = "Education Level"
-  ) 
+    y = "Median Weekly Earnings"
+  ) +
+  theme_minimal(base_size = 16) +         # larger base text for slides
+  theme(
+    text = element_text(family = "Helvetica", face = "bold"),
+    plot.title = element_text(size = 22, face = "bold", hjust = 0.5),
+    axis.title.x = element_text(size = 18, face = "bold"),
+    axis.title.y = element_text(size = 18, face = "bold"),
+    axis.text.x = element_text(size = 14, face = "bold", angle = 20, hjust = 1),
+    axis.text.y = element_text(size = 14, face = "bold"),
+    legend.position = "none",             # removes redundant legend
+    panel.grid.major.x = element_blank()  # cleaner slide aesthetic
+  )
+
 ```
 
 ## One-Way ANOVA (Ignoring Time)
+
+Check for equal variances
+
+```{r}
+library(car)
+leveneTest(median_weekly_earnings ~ education_level, data = earnings_df)
+
+leveneTest(median_weekly_earnings ~ education_level * year, data = earnings_df)
+
+```
 
 ```{r}
 oneway <- aov(median_weekly_earnings ~ education_level, data = earnings_df)
@@ -56,6 +92,11 @@ summary(oneway)
 ```
 
 The one-way ANOVA test revealed a highly significant effect of education level on median weekly earnings. This indicates that mean earnings differ substantially across the three education groups.
+
+```{r}
+# Welch's ANOVA
+oneway.test(median_weekly_earnings ~ education_level, data = earnings_df)
+```
 
 ## **Two-Way ANOVA (Analyzing Effect of Education Level & Time)**
 
@@ -66,3 +107,163 @@ summary(model_two_way)
 ```
 
 Bachelor’s degree holders consistently earn much more than those with some college/associate degrees, who in turn earn more than those with only a high school diploma.
+
+```{r}
+#Games-Howell Test
+library(rstatix)
+
+earnings_df |> games_howell_test(median_weekly_earnings ~ education_level)
+```
+
+## ROI Analysis
+
+```{r}
+limited_earnings_df <- earnings_df[earnings_df$education_level != "high_school",] 
+
+limited_earnings_df <- limited_earnings_df |> 
+  mutate(degree_category = case_when(
+    education_level == "ba_only" ~ "Bachelor's",education_level == "some_college_assoc" ~ "Vocational",
+    TRUE ~ "NA"
+  ))
+
+tuition_df <- tuition_df |> 
+  mutate(degree_category = case_when(
+    degree_granting == "Degree Granting" ~ "Bachelor's",
+    degree_granting == "Non-Degree Granting" ~ "Vocational",
+    TRUE ~ "NA"
+  ))
+```
+
+Join Dataframes together to assess ROI
+
+```{r}
+temp_earnings_df <- limited_earnings_df |> select(c("median_weekly_earnings","year","degree_category"))
+temp_tuition_df <- tuition_df |> select(c("average_tuition","year","degree_category"))
+
+merged_df <- merge(temp_earnings_df, temp_tuition_df, by = c("degree_category","year"))
+
+roi_df <- merged_df |> mutate( ROI = median_weekly_earnings / average_tuition )
+
+roi_yearly <- roi_df %>%
+  group_by(degree_category, year) %>%
+  summarize(ROI = mean(ROI), .groups = "drop") %>%
+  arrange(degree_category, year)
+
+roi_clean <- merged_df |>
+  dplyr::group_by(degree_category, year) |>
+  dplyr::summarise(
+    annual_earnings = mean(median_weekly_earnings) * 52,
+    tuition  = mean(average_tuition),
+    ROI      = annual_earnings / tuition,  # annualized ROI
+    .groups = "drop"
+  )
+
+```
+
+```{r}
+library(plotly)
+
+plot <- plot_ly(roi_clean, x = ~year) %>%
+  add_trace(
+    y = ~ROI,
+    color = ~degree_category,
+    colors = c("Bachelor's" = "#E64B35", "Vocational" = "#4DBBD5"),
+    type = "scatter",
+    mode = "lines+markers",
+    name = ~paste(degree_category, "ROI"),
+    yaxis = "y"
+  ) %>%
+
+  add_trace(
+    y = ~annual_earnings,
+    x = ~year,
+    split = ~degree_category,
+    type = "bar",
+    name = ~paste(degree_category, "Earnings"),
+    opacity = 0.4,
+    yaxis = "y2",
+    showlegend = TRUE
+  ) %>%
+
+  add_trace(
+    y = ~tuition,
+    x = ~year,
+    split = ~degree_category,
+    type = "bar",
+    name = ~paste(degree_category, "Tuition"),
+    opacity = 0.4,
+    yaxis = "y2",
+    showlegend = TRUE
+  ) %>%
+  layout(
+    title = "ROI with Earnings and Tuition Over Time",
+    barmode = "group",
+    xaxis = list(title = "Year"),
+    yaxis = list(
+      title = "ROI (Earnings / Tuition)",
+      rangemode = "tozero"
+    ),
+    yaxis2 = list(
+      title = "Dollars (Earnings & Tuition)",
+      overlaying = "y",
+      side = "right",
+      rangemode = "tozero"
+    ),
+    legend = list(title = list(text = "<b>Series</b>"))
+  )
+
+# htmlwidgets::saveWidget(plot, "roi_plot.html")
+
+plot
+```
+
+## Time Series Analysis Using Employment Population Ratio
+
+```{r}
+
+emp_ratio_df$date <- as.Date(emp_ratio_df$date, "%Y-%m-%d")
+emp_ratio_df$employment_population_ratio <- as.numeric(emp_ratio_df$employment_population_ratio)
+max <- max(emp_ratio_df$employment_population_ratio)
+
+fig <- plot_ly(
+  emp_ratio_df,
+  x = ~date,
+  y = ~employment_population_ratio,
+  color = ~education_level,        
+  colors = c(
+    "ba_plus" = "#E64B35",
+    "some_college_assoc" = "#4DBBD5",
+    "high_school" = "#00A087"
+  ),
+  type = 'scatter',
+  mode = 'lines'
+)
+
+fig <- fig |>
+  layout(
+    title = "Employment Population Ratio (2019–2025)",
+    xaxis = list(title = "Date"),
+    yaxis = list(title = "Employment-Population Ratio"),
+    legend = list(title = list(text = "<b>Education Level</b>")),
+    shapes = list(
+      list(type = 'rect',
+           x0 = "2019-12-01", x1 = "2020-12-01",
+           y0 = 40, y1 = max,
+           line = list(color = 'rgba(0, 0, 255, 0.5)', width = 2),
+           fillcolor = 'rgba(0, 0, 255, 0.2)')
+    ),
+    annotations = list(
+      list(
+        x = "2020-06-01",
+        y = max + 2,
+        text = "COVID-19",
+        showarrow = FALSE,
+        font = list(color = 'black', size = 12)
+      )
+  )
+)
+
+
+fig
+
+```
