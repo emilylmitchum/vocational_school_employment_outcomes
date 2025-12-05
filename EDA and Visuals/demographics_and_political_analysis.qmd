@@ -9,46 +9,409 @@ editor: visual
 toc: true
 ---
 
-# IPEDS Demographic Data/2024 Election Results Exploratory Analysis and Visualization
+# IPEDS Demographic Data/2024 Election Results EDA and Statistical Analysis
 
 ```{r}
 
-# plotly instead of ggplot2!!
+library(plotly)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(ggrepel)
 
 # Read data
-ipeds_demographic_data <- read.csv("../Cleaned data/Cleaned_ipeds_state_demographics.csv")
-ipeds_demographic_data_2024 <- read.csv("../Cleaned data/Cleaned_ipeds_state_demographics_2024.csv")
-ipeds_state_summary <- read.csv("../Cleaned data/Cleaned_ipeds_summary_state_demographics.csv")
-ipeds_state_totals <- read.csv("../Cleaned data/Cleaned_ipeds_totals_summary_state_demographics.csv")
-presidential_election_results <- read.csv("../Cleaned data/Cleaned_2024_election_results.csv")
+ipeds_demographic_data <- read.csv("./Cleaned data/Cleaned_ipeds_state_demographics.csv")
+ipeds_demographic_data_2024 <- read.csv("./Cleaned data/Cleaned_ipeds_state_demographics_2024.csv")
+ipeds_state_summary_2024 <- read.csv("./Cleaned data/Cleaned_ipeds_summary_2024_state_demographics.csv")
+ipeds_state_totals <- read.csv("./Cleaned data/Cleaned_ipeds_totals_summary_state_demographics.csv")
+presidential_election_results <- read.csv("./Cleaned data/Cleaned_2024_election_results.csv")
 
-# Create a list of all the datasets for initial cleaning
-dfs  <- list(ipeds_demographic_data, ipeds_demographic_data_2024, ipeds_state_summary, ipeds_state_totals, presidential_election_results)
+# Create a list of all the datasets for initial cleaning (column names in R)
+df_names <- c(
+  "ipeds_state_summary_2024",
+  "presidential_election_results"
+)
 
-# Replace . with _ in column labels
-dfs <- lapply(dfs, function(df) {
-    names(df) <- gsub("\\.", "_", names(df))
-    df
-})
-
-## 2024 IPEDS Demographic Data ##
-
-# See N/A Values by column
-summary(ipeds_demographic_data_2024)
-
-# Box plot: overall distribution 
+# Loop through and update each data frame directly
+for (nm in df_names) {
+  df <- get(nm)  
+  new_names <- gsub("\\.", "_", names(df))
+  # Replace any double underscores with single underscore
+  new_names <- gsub("_+", "_", new_names)
+  names(df) <- new_names             
+  assign(nm, df) 
+}
 
 
 ```
 
 ```{r}
 
-# Box plot: enrollment by race/ethnicity
-(MyL1<-ggplot(ipeds_demographic_data_2024, aes(x=Completion_Year, y=Total,fill=State))+
-    geom_boxplot()+
-    geom_jitter(position=position_jitter(.01), aes(color=Completion_Year))+
-  ggtitle("Degrees granted by year"))
+## Heat map: 2024 trade school rates by state
 
-## All Years ##
+library(tidyverse)
+
+# Isolate the state and count of students for trade schools vs not
+state_counts_wide_2024 <- ipeds_state_summary_2024 |>
+  select(state, state_fips_code, trade_school_check, Grand_total)
+
+state_counts_wide_2024$Grand_total <- as.numeric(state_counts_wide_2024$Grand_total)
+
+# Pivot wider so trade school counts both get their own columns
+state_counts_wide_2024 <- state_counts_wide_2024 |>
+  pivot_wider(
+    names_from = trade_school_check,
+    values_from = Grand_total,
+    names_prefix = "trade_school_"
+  ) 
+
+# Convert NA to 0 (so addition doesn't break)
+state_counts_wide_2024 <- state_counts_wide_2024 |>
+  mutate(
+    trade_school_False = ifelse(is.na(trade_school_False), 0, trade_school_False),
+    trade_school_True  = ifelse(is.na(trade_school_True), 0, trade_school_True)
+  )
+
+# Add a combined total column
+state_counts_wide_2024 <- state_counts_wide_2024 |>
+  mutate(total_students_combined = trade_school_False + trade_school_True)
+
+# Add a percentage of total in trade school and traditional 4-year schools
+state_counts_wide_2024 <- state_counts_wide_2024 |>
+  mutate(
+    percent_trade_school = (trade_school_True /total_students_combined) * 100,
+    percent_traditional_school = (trade_school_False / total_students_combined) * 100
+  )
+
+# Drop US territories and Washington DC (50 state map scope)
+state_counts_wide_2024 <- state_counts_wide_2024 |> filter( !state %in% c("American Samoa", "Marshall Islands", "Northern Marianas", "Virgin Islands", "Guam", "Micronesia", "Palau", "Puerto Rico", "District of Columbia"))
+
+# Get the lat/long values for the middle of each state
+state_coord_lookup <- data.frame(
+  state = state.name,
+  lon = state.center$x,
+  lat = state.center$y
+)
+
+# Merge coordinates into trade school data
+label_data <- state_counts_wide_2024 |>
+  left_join(state_coord_lookup, by = "state")
+
+# Make offsets for the labels of small states so they don't overlap
+offsets <- tribble(
+  ~state, ~lon_offset, ~lat_offset,
+  "Connecticut",     0.2,   -0.3,  # 1.2, -0.3
+  "Rhode Island",    1.4,    0.3,
+  "Massachusetts",   1.2,    0.6,
+  "New Jersey",      1.0,   -0.5,
+  "Delaware",        1.0,   -0.2,
+  "Maryland",        0.8,   -0.3,
+  "Vermont",         0.6,    0.5,
+  "New Hampshire",   0.8,    0.8,
+  "Hawaii",         24.0,   -5.3,
+  "Alaska",         11.5,  -22.0,
+)
+
+label_data <- label_data |>
+  left_join(offsets, by = "state") |>
+  mutate(
+    lon_plot = ifelse(is.na(lon_offset), lon, lon + lon_offset),
+    lat_plot = ifelse(is.na(lat_offset), lat, lat + lat_offset)
+  )
+
+# Create the heatmap
+
+fig <- plot_ly() |>
+  add_trace(
+    data = state_counts_wide_2024,
+    type = "choropleth",
+    locations = ~state_fips_code,
+    z = ~percent_trade_school,
+    locationmode = "USA-states",
+    colorscale = "Plasma",
+    colorbar = list(title = "Trade School %"),
+    text = ~paste(
+      state, "<br>",
+      "Trade School %: ", round(percent_trade_school, 2), "%<br>",
+      "Total Students: ", total_students_combined
+    ),
+    hoverinfo = "text"
+  ) |>
+  add_trace(
+    data = label_data,
+    type = "scattergeo",
+    mode = "text",
+    lon = ~lon_plot,
+    lat = ~lat_plot,
+    text = ~paste0(round(percent_trade_school), "%"),
+    textfont = list(size = 11, color = "black"),
+    hoverinfo = "none",
+    showlegend = FALSE
+  ) |>
+  layout(
+    geo = list(
+      scope = "usa",
+      projection = list(type = "albers usa"),
+      showlakes = TRUE,
+      lakecolor = "lightblue"
+    ),
+    title = list(
+      text = "Percentage of Students Attending Trade Schools by State (2024)",
+      y = 0.97,
+      yanchor = "top"
+    )
+  )
+
+htmlwidgets::saveWidget(fig, "./EDA and Visuals/Complete Visuals/TradeSchool_Heatmap_.html", selfcontained=TRUE)
+
+```
+
+```{r}
+
+## Heat map: 2024 trade school rates by state and political party
+library(tidyverse)
+
+# Merge election results data by state to the labels from above
+election_state_data <- label_data |>
+  left_join(presidential_election_results, by = "state")
+head(election_state_data)
+
+# Move decimal place election percentage values and add a single value to show democratic vs republican scale
+election_state_data <- election_state_data |>
+  mutate(
+    democratic_votes_percent = democratic_votes_percent * 100,
+    republican_votes_percent = republican_votes_percent * 100,
+    political_lean = democratic_votes_percent - republican_votes_percent
+  )
+
+# Plot the data, using the democratic/republican percentages to make our scale
+
+fig <- plot_ly() |>
+  add_trace(
+    data = election_state_data,
+    type = "choropleth",
+    locations = ~state_fips_code,
+    z = ~political_lean,
+    locationmode = "USA-states",
+    colorscale = list(
+      c(0, 0.5, 1),            
+      c("red", "white", "blue") 
+    ),
+    colorbar = list(title = "Political Lean<br>(Blue = Dem, Red = GOP)"),
+    text = ~paste(
+      state, "<br>",
+      "Trade School %: ", round(percent_trade_school, 2), "%<br>",
+      "Political Lean: ", round(political_lean, 1), "<br>",
+      "Percentage Democratic Votes:", round(democratic_votes_percent, 2), "%<br>",
+      "Percentage Republican Votes:", round(republican_votes_percent, 2), "%<br>",      
+      "Total Students: ", total_students_combined
+    ),
+    hoverinfo = "text"
+  ) |>
+  add_trace(
+    data = label_data,
+    type = "scattergeo",
+    mode = "text",
+    lon = ~lon_plot,
+    lat = ~lat_plot,
+    text = ~paste0(round(percent_trade_school), "%"),
+    textfont = list(size = 11, color = "black"),
+    hoverinfo = "none",
+    showlegend = FALSE
+  ) |>
+  layout(
+    geo = list(
+      scope = "usa",
+      projection = list(type = "albers usa"),
+      showlakes = FALSE,
+      lakecolor = "lightblue"
+    ),
+    title = list(
+      text = "Percentage of Students Attending Trade Schools by State and Political Climate (2024)",
+      y = 0.97,
+      yanchor = "top"
+    )
+  )
+
+fig
+
+htmlwidgets::saveWidget(fig, "./EDA and Visuals/Complete Visuals/TradeSchool_PoliticalParty_Heatmap.html", selfcontained=TRUE)
+
+```
+
+```{r}
+
+## Box plot: enrollment by state majority political party
+
+# Join voting information to state summary data
+trade_political_2024 <- state_counts_wide_2024 |> 
+  inner_join(presidential_election_results, by = "state")
+
+# Plot
+(state_trade_plot <- ggplot(trade_political_2024, aes(x=popular_vote_party, y=percent_trade_school,fill=popular_vote_party))+
+    geom_boxplot()+
+    geom_jitter(position=position_jitter(.01), aes(color=popular_vote_party)) +
+  scale_fill_manual(values = c(
+    "Democratic" = "blue",
+    "Republican" = "red"
+  )) +
+  scale_color_manual(values = c(
+    "Democratic" = "blue",
+    "Republican" = "red"
+  )) +
+  ggtitle("Trade School Percentage by State Majority Voting Party (2024)"))
+
+ggsave(filename = "./EDA and Visuals/Complete Visuals/TradeSchool_PoliticalParty_Boxplot.png", plot = state_trade_plot)
+
+```
+
+# Statistical Analysis
+
+```{r}
+
+# T-test: trade school attendance vs political party 
+
+# Use the election and state data prepared above
+options(tibble.width = Inf)
+head(election_state_data)
+
+# Null hypothesis: Trade school enrollment is the same for states with either Democratic or Republican voting majorities.
+# Alternative Hypothesis: Trade school enrollment is different in states with either Democratic or Republican voting majorities.
+
+# Isolate Democratic and Republican states
+democratic <- election_state_data[election_state_data$popular_vote_party == "Democratic", ]
+republican <- election_state_data[election_state_data$popular_vote_party == "Republican", ]
+
+# T-test
+t.test(democratic$percent_trade_school, republican$percent_trade_school)
+
+# Plots for reference: Republican and Democrat percentage distributions
+democratic |>
+  ggplot(aes(x = percent_trade_school)) +
+  geom_histogram(binwidth=5,  fill = "steelblue", color = "black", linewidth = 0.3) +
+  theme_classic() +
+  ggtitle("Democratic Voters Trade School Attendance Plot")
+
+republican |>
+  ggplot(aes(x = percent_trade_school)) +
+  geom_histogram(binwidth=5,  fill = "steelblue", color = "black", linewidth = 0.3) +
+  theme_classic() +
+  ggtitle("Republican Voters Trade School Attendance Plot")
+
+# Conclusion: 
+# I accept the null hypothesis that states with Republican or Democratic voting majorities have the same trade school enrollment rates. This is because my t-test returned a p-value of 0.7394, which is significantly higher than the threshold of 0.05. Additionally, the 95% confidence interval is between -8.132139 and 11.341237. This interval goes from negative to positive bounds, indicating that there isn't higher enrollment towards Democratic or Republican voting states.
+```
+
+```{r}
+
+# Chi Square Test for independence: enrollment demographics
+# Determine if there is a relationship between demographics (race/ethnicity vs gender) and enrollment in trade school vs four year programs 
+
+## Race/Ethnicity ##
+
+# Null hypothesis: Race and ethnicity demographic information and enrollment type between trade school and four-year college degree programs are independent.
+# Alternative hypothesis: Race and ethnicity demographic information and enrollment type between trade school and four-year college degree programs are not independent.
+
+# Make a contingency table with demographics information
+ipeds_summary_2024 <- ipeds_state_summary_2024 |>
+  select(-state, -state_fips_code, -Level_and_degree_certificate_seeking_status_of_student,
+  -Undergraduate_or_graduate_level_of_student,
+  -year)
+ipeds_summary_2024 <- ipeds_summary_2024 |>
+      group_by(trade_school_check) |>
+      summarise_if(is.numeric, sum)
+
+# Drop duplicate categories (subsets for men and women that are not "Grand_total_men" and "Grand_total_women")
+ipeds_summary_2024 <- ipeds_summary_2024 |>
+  select( !matches("men|women") | all_of(c("Grand_total_men", "Grand_total_women")) )
+
+# Create a copy of the dataframe that just has race/ethnicity information
+race_ethnicity_table <- ipeds_summary_2024
+race_ethnicity_table <- race_ethnicity_table |>
+  select( !matches("men|women|gender"))
+
+# Transpose the dataframe
+race_ethnicity_table <- t(race_ethnicity_table)
+
+# Convert back from a matrix to a dataframe
+race_ethnicity_table <- as.data.frame(race_ethnicity_table)
+
+# Make trade_school_check the column names
+colnames(race_ethnicity_table) <- race_ethnicity_table[1, ] 
+
+# Drop trade school check
+race_ethnicity_table <- race_ethnicity_table[-1, ]
+
+# Add trade_school_ prefix to column names
+colnames(race_ethnicity_table) <- paste0("trade_school_", colnames(race_ethnicity_table))
+
+# Remove spaces in the columns
+race_ethnicity_table$trade_school_True <- gsub(" ", "", race_ethnicity_table$trade_school_True)
+race_ethnicity_table$trade_school_False <- gsub(" ", "", race_ethnicity_table$trade_school_False)
+
+# Convert trade school columns to numeric
+race_ethnicity_table$trade_school_True <- as.numeric(race_ethnicity_table$trade_school_True)
+race_ethnicity_table$trade_school_False <- as.numeric(race_ethnicity_table$trade_school_False)
+write.csv(race_ethnicity_table, file="./EDA and Visuals/Complete Visuals/Visualized Data Reference/Race_Ethnicity_Summary.csv")
+
+print(head(race_ethnicity_table))
+
+print("Race and Ethnicity Chi-Square Test")
+chi_square_test <- chisq.test(as.matrix(race_ethnicity_table))
+print(chi_square_test)
+
+# The conclusion of the chi-square test is that the X-squared value is 197966, the df is 9, and the p-value is 2.2e-16. Since the p-value is much smaller than 0.05, I reject the null hypothesis that there is no relationship between race and ethnicity and trade school vs four-year university program enrollment. 
+
+## Gender ##
+
+# Null hypothesis: Gender demographic information and enrollment type between trade school and four-year college degree programs are independent.
+# Alternative hypothesis: Gender demographic information and enrollment type between trade school and four-year college degree programs are not independent.
+
+# Create a copy of the dataframe that just has gender information
+gender_table <- ipeds_summary_2024
+gender_table <- gender_table |>
+  select(matches("men|women|gender|Gender|trade"))
+
+# Transpose the dataframe
+gender_table <- t(gender_table)
+
+# Convert back from a matrix to a dataframe
+gender_table <- as.data.frame(gender_table)
+
+# Make trade_school_check the column names
+colnames(gender_table) <- gender_table[1, ] 
+
+# Drop trade school check
+gender_table <- gender_table[-1, ]
+
+# Add trade_school_ prefix to column names
+colnames(gender_table) <- paste0("trade_school_", colnames(gender_table))
+
+# Convert trade school columns to numeric
+gender_table$trade_school_True <- as.numeric(gender_table$trade_school_True)
+gender_table$trade_school_False <- as.numeric(gender_table$trade_school_False)
+write.csv(gender_table, file="./EDA and Visuals/Complete Visuals/Visualized Data Reference/Gender_Summary.csv")
+
+print(head(gender_table))
+
+print("Gender Chi-Square Test")
+chi_square_test <- chisq.test(as.matrix(gender_table))
+print(chi_square_test)
+
+# The conclusion of the chi-square test is that the X-squared value is 4913, the df is 3, and the p-value is 2.2e-16. Since the p-value is much smaller than 0.05, I reject the null hypothesis that there is no relationship between gender and trade school vs four-year university program enrollment. 
+
+```
+
+```{r}
+
+## Pearson correlation: map the relationship between trade school enrollment (percentage) vs political lean
+
+print(head(election_state_data))
+
+# Compare percent_trade_school and political_lean
+cor(election_state_data$percent_trade_school, election_state_data$political_lean, method="pearson")
+cor.test(election_state_data$percent_trade_school, election_state_data$political_lean, method="pearson")
+
+# The r value of the Pearson correlation is 0.03997543, meaning there is no linear correlation between the percentage of students enrolled in trade schools by state and political lean. The political lean (difference between Democratic and Republican vote percentages) was utilized to more granularly measure political climate.
 
 ```
