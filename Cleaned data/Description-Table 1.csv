@@ -1,0 +1,445 @@
+varNumber,varName,longDescription,,
+1,UNITID,,,
+10001,INSTNM,Institution (entity) name,,
+16081,IALIAS,Institution name alias - This is a character string field that contains aliases that an institution can be referenced as. The aliases were submitted by the institution.,,
+10006,ADDR,Institution (entity) street address or post office box,,
+10011,CITY,City location of institution,,
+10016,STABBR,US Postal Service state abbreviation. See also FIPS STATE CODE (FIPS).,,
+10021,ZIP,"ZIP code - if includes ZIP+4, does not include dash (-), e.g., 060102301. If ZIP+4 not reported, the last four
+positions will be blank",,
+10026,FIPS,FIPS state code (minor adjustments for outlying areas),,
+10031,OBEREG,"Bureau of Economic Analysis (BEA) Regions 
+
+BEA Regions are a set of Geographic Areas that are aggregations of the states. The regional classifications, which were developed in the mid-1950s, are based on the homogeneity of the states in terms of economic characteristics, such as the industrial composition of the labor force, and in terms of demographic, social, and cultural characteristics. BEA groups all 50 states and the District of Columbia into eight distinct regions for purposes of data collecting and analyses.  IPEDS/HEGIS assigns U.S. service schools as their own region.
+
+0 - US Service schools
+1 - New England CT ME MA NH RI VT
+2 - Mid East DE DC MD NJ NY PA
+3 - Great Lakes IL IN MI OH WI
+4 - Plains IA KS MN MO NE ND SD
+5 - Southeast AL AR FL GA KY LA MS NC SC TN VA WV
+6 - Southwest AZ NM OK TX
+7 - Rocky Mountains CO ID MT UT WY
+8 - Far West AK CA HI NV OR WA
+9 - Outlying areas AS FM GU MH MP PR PW VI
+-3 - Not available",,
+10036,CHFNM,"Name of chief administrator of institution
+-1 - Not reported
+-2 - Not applicable
+-9 -  not active",,
+10041,CHFTITLE,"Title of chief administrator of institution
+-1 - Not reported
+-2 - Not applicable
+-9 - not active",,
+10046,GENTELE,"General information telephone number
+-1 - Not reported
+-2 - Not applicable
+-9 - not active",,
+10061,EIN,"The number assigned to an institution by the Internal Revenue Service for tax purposes. 
+",,
+10069,UEIS,"The official identifier for doing business with the U.S. Government. Replaces the DUNs number starting in April of 2022. For more information, please visit the GSA page at https://www.gsa.gov/about-us/organization/federal-acquisition-service/office-of-systems-management/integrated-award-environment-iae/iae-systems-information-kit/unique-entity-identifier-update. Multiple UEI numbers are separated by the vertical bar.",,
+10071,OPEID,"Identification number used by the U.S. Department of Education's Office of Postsecondary Education (OPE) to identify schools that have Program Participation Agreements (PPA) so that its students are eligible to participate in Federal Student Financial Assistance programs under Title IV regulations. This is a 6-digit number followed by a 2-digit suffix used to identify branches, additional locations, and other entities that are part of the eligible institution. 
+
+",,
+10076,OPEFLAG,"Code indicating the institution's degree of eligibility for Title IV aid.
+",,
+10081,WEBADDR,Institution's internet website address,,
+10058,ADMINURL,Admissions office web (URL) address,,
+10053,FAIDURL,Financial aid office web (URL) address,,
+10059,APPLURL,Web address (URL) on online applciation,,
+10083,NPRICURL,"Net Price Calculator Web Address  for institutions that enroll full-time, first-time undergraduate students ",,
+16131,VETURL,Does your institution post tuition policies specifically related to Veterans and Military Servicemembers on a website?  Provide URL,,
+80081,ATHURL,Student-Right-to-Know student athlete graduation rate website URL,,
+10060,DISAURL,Disability Services Web Address,,
+10086,SECTOR,"One of nine institutional categories resulting from dividing the universe according to control and level. Control categories are public, private not-for-profit, and private for-profit. Level categories are 4-year and higher (4 year), 2-but-less-than 4-year (2 year), and less than 2-year. For example: public, 4-year institutions.
+
+Control - A classification of whether an institution is operated by publicly elected or appointed officials (public control) or by privately elected or appointed officials and derives its major source of funds from private sources (private control).
+
+Level - A classification of whether an institution’s programs are 4-year or higher (4 year), 2-but-less-than 4-year (2 year), or less than 2-year.",,
+10091,ICLEVEL,"A classification of whether an institution’s programs are 4-year or higher (4 year), 2-but-less-than 4-year (2 year), or less than 2-year. 
+
+",,
+10096,CONTROL,"A classification of whether an institution is operated by publicly elected or appointed officials or by privately elected or appointed officials and derives its major source of funds from private sources.
+
+Public institution - An educational institution whose programs and activities are operated by publicly elected or appointed school officials and which is supported primarily by public funds. 
+
+Private not-for-profit institution - A private institution in which the individual(s) or agency in control receives no compensation, other than wages, rent, or other expenses for the assumption of risk. These include both independent not-for-profit schools and those affiliated with a religious organization. 
+
+Private for-profit institution - A private institution in which the individual(s) or agency in control receives compensation other than wages, rent, or other expenses for the assumption of risk. 
+
+
+
+",,
+10101,HLOFFER,"Highest level of offering (generated, based on response to IC
+survey)
+0 - Other
+1 - Postsecondary award, certificate or diploma of less than one academic year
+2 - Postsecondary award, certificate or diploma of at least one but less than two academic years
+3 - Associate's degree
+4 - Postsecondary award, certificate or diploma of at least two but less than four academic years
+5 - Bachelor's degree
+6 - Postbaccalaureate certificate
+7 - Master's degree
+8 - Post-master's certificate
+9 - Doctor's degree
+b - None of the above or no answer
+-2 - Not applicable, first-professional only
+-3 - Not Available",,
+10106,UGOFFER,"A code indicating whether the institution offers undergraduate degrees or certificates.
+
+Undergraduate degrees or certificates include associate's and bachelor's degrees, and certificates that require less-than 4 academic 
+years of study. 
+
+
+",,
+10111,GROFFER,"A code indicating whether the institution offers graduate degrees or certificates.
+
+Graduate degrees or certificates include master^s and doctor's degrees and postbaccalaureate and post-master's certificates ",,
+10122,HDEGOFR1,"A code for highest degree offered at the institution - This variable was revised in 2009 because the first professional category is no longer an award level and the Doctoral award level category has expanded to 3 categories, Doctor's degree - Research/scholarships, Doctor's degree - professional practice and Doctor's degree-other.
+
+This variable is derived from the level of offering variables (LEVEL1-LEVEL8 LEVEL12 and LEVEL17-LEVEL19) from the Institutional Characteristics component as follows: 
+
+IF LEVEL17=1 and LEVEL18=1 then HDEGOFR1=11
+else if LEVEL17=1 and LEVEL18 ne 1 then HDEGOFR1=12 
+else if LEVEL17 ne 1 and LEVEL18=1 then HDEGOFR1=13 
+else if LEVEL17 ne 1 and LEVEL18 ne 1 and LEVEL19=1 then HDEGOFR1=14 
+else if LEVEL7=1  HDEGOFR1=20 
+else if LEVEL5=1  HDEGOFR1=30 
+else if LEVEL3=1  HDEGOFR1=40 
+else if LEVEL1=1 or LEVEL2=1 or LEVEL4=1 or LEVEL6=1 or LEVEL8=1 
+or LEVEL12=1 then HDEGOFR1=0 
+else HDEGOFR1=-3; 
+For more information see descriptions of LEVEL1-LEVEL12",,
+10126,DEGGRANT,"A code indicating the degree-granting status of the institution.
+
+Degree-granting institutions offer an associate's, bachelor's, master's, doctor's or a first-professional degree. 
+
+Nondegree-granting offers certificates or other formal awards. ",,
+10151,HBCU,"A code to indicate whether the institution is one of the Historically Black College or University (HBCU) institutions.
+
+Historically Black Colleges and Universities (HBCU) - The Higher Education Act of 1965, as amended, defines an HBCU as: ""...any historically black college or university that was established prior to 1964, whose principal mission was, and is, the education of black Americans, and that is accredited by a nationally recognized accrediting agency or association determined by the Secretary [of Education] to be a reliable authority as to the quality of training offered or is, according to such an agency or association, making reasonable progress toward accreditation."" Federal regulations (20 USC 1061 (2)) allow for certain exceptions to the founding date. 
+
+",,
+10156,HOSPITAL,"A code to indicate whether the institution has hospital.
+
+This variable was derived using Finance data.
+
+If institution reported either revenues from Sales and services of hospitals GASB, hospital revenues (FASB), or expenses for hospital services (GASB or FASB) an institution was determined to have a hospital.  See glossary terms below.
+
+
+Sales and services of hospitals (revenues) F1B06-GASB.  Revenues (net of discounts, allowances, and provisions for uncollectible accounts receivable) generated by hospitals from daily patient, special and other services. Revenues of health clinics that are part of a hospital should be included in this category, unless such clinics are part of the student health services program. 
+
+Hospitals (revenues) F2D13-FASB.  Revenues generated by a hospital operated by the postsecondary institution. Includes gifts, grants, appropriations, research revenues, endowment income, and revenues of health clinics that are part of the hospital unless such clinics are part of the student health services program. Sales and service revenues are included net of patient contractual allowances. Revenues associated with the medical school are included elsewhere. Also includes all amounts appropriated by governments (federal, state, local) for the operation of hospitals. 
+
+Hospital services (F1C121-GASB, F2E091-FASB).  Expenses associated with a hospital operated by the postsecondary institution (but not as a component unit) and reported as a part of the institution. This classification includes nursing expenses, other professional services, general services, administrative services, and fiscal services. Also included are information technology expenses, actual or allocated costs for operation and maintenance of plant, and depreciation related to hospital capital assets. FASB institutions also charge or allocate interest expense to hospitals. 
+
+",,
+10161,MEDICAL,"A code to indicate whether the institution grants a medical degree.
+
+This variable is derived from the 2012-13 completions component of the IPEDS survey.
+
+Medical degrees include: 
+Medicine (M.D.) (51.1201), 
+Dentistry (D.D.S., D.M.D.) (51.0401)
+Osteopathic Medicine (D.O.) (51.1901)
+Veterinary Medicine (D.V.M.) (51.2401)",,
+10166,TRIBAL,"A code to indicate whether the institution is one of the Tribal Colleges and Universities. These institutions, with few exceptions, are tribally controlled and located on reservations. They are all members of the American Indian Higher Education Consortium.
+",,
+10176,LOCALE,"Locale codes identify the geographic status of a school on an urban continuum ranging from “large city” to “rural.”  They are based on a school’s physical address. The urban-centric locale codes introduced in this file are assigned through a methodology developed by the U.S. Census Bureau’s Population Division.   Locale codes are based on U.S. Census Bureau, 2023 TIGER/Line Shapefiles
+
+11 = City: Large: Territory inside an urbanized area and inside a principal city with population of 250,000 or more. 
+
+12 = City: Midsize: Territory inside an urbanized area and inside a principal city with population less than 250,000 and greater than or equal to 100,000.
+
+13 = City: Small: Territory inside an urbanized area and inside a principal city with population less than 100,000.
+
+21 = Suburb: Large: Territory outside a principal city and inside an urbanized area with population of 250,000 or more.
+
+22 = Suburb: Midsize: Territory outside a principal city and inside an urbanized area with population less than 250,000 and greater than or equal to 100,000.
+
+23 = Suburb: Small: Territory outside a principal city and inside an urbanized area with population less than 100,000.
+
+31 = Town: Fringe: Territory inside an urban cluster that is less than or equal to 10 miles from an urbanized area.
+
+32 = Town: Distant: Territory inside an urban cluster that is more than 10 miles and less than or equal to 35 miles from an urbanized area.
+
+33 = Town: Remote: Territory inside an urban cluster that is more than 35 miles of an urbanized area.
+
+41 - Rural: Fringe: Census-defined rural territory that is less than or equal to 5 miles from an urbanized area, as well as rural territory that is less than or equal to 2.5 miles from an urban cluster. 
+
+42 = Rural: Distant: Census-defined rural territory that is more than 5 miles but less than or equal to 25 miles from an urbanized area, as well as rural territory that is more than 2.5 miles but less than or equal to 10 miles from an urban cluster. 
+
+43 = Rural: Remote: Census-defined rural territory that is more than 25 miles from an urbanized area and is also more than 10 miles from an urban cluster.
+
+American Samoa, the Commonwealth of the Northern Mariana Islands, Guam, and the Virgin Islands,  were not assigned a locale code because the geographic and governmental structures of these entities do not fit the definitional scheme used to derive the code.",,
+10181,OPENPUBL,"A code to indicate whether the institution is open for admission to the general public. 
+
+",,
+10186,ACT,"A code to indicate the status of institution's participation in IPEDS.
+",,
+10191,NEWID,UNITID where data is found for merged schools.,,
+10196,DEATHYR,Year institution was deleted from IPEDS.,,
+10201,CLOSEDAT,"Date institution closed - format is mmddyyyy.
+",,
+10206,CYACTIVE,"A code to indicate whether the institution is active in current year.  This code is derived from the more detailed ACT (status of institution) variable. 
+
+Active school CYACTIVE=1 includes:
+ACT=A an open (active) institution 
+ACT=N an institution that opened in the current year 
+ACT=M an institution that closed in the current year, but will have data from the previous academic year for example Finance or Completions data for academic year 2016-17 
+ACT=R an institution that was previously not active and was restored in the current year 
+
+CYACTIVE=2 includes potential adds and restores (ACT=P,R) 
+
+CYACTIVE=3 includes all other inactive institutions
+ACT=C combined with another active institution
+ACT=D delete institution is out of business
+ACT=O institution is out-of-scope
+ACT=W potential add that was not added
+ACT=X potential restore that was not restored",,
+10211,POSTSEC,"Identifies an institution which has as its sole purpose or one of its primary missions, the provision of postsecondary education.  
+
+Postsecondary education - The provision of a formal instructional program whose curriculum is designed primarily for students who are beyond the compulsory age for high school. This includes programs whose purpose is academic, vocational, and continuing professional education, and excludes avocational and adult basic education programs. ",,
+10216,PSEFLAG,"Postsecondary institution indicator
+Identifies an institution whose primary purpose is to provide postsecondary education,is open to the general public and is currently an active (operating) institution. 
+",,
+10221,PSET4FLG,"A derived indicator to easily select institutions who are (1) currently in the IPEDS universe, (2) open to the public, (3) participant in Title IV program, and (4) primarily postsecondary institution.
+
+This variable is used to produce tables that are published in IPEDS First look reports(previously known as E.D. tabs) and tables in the Digest of Education Statistics.
+The  ""First Look"" universe of institutitons includes Title IV primarily postsecondary and Title IV not primarily postsecondary institutions ( PSET4FLG in (1,3)).  Prior to IPEDS 2010 data collection the ""First Look/E.D. Tabs"" universe included Title IV  primarily postsecondary institutions ( PSET4FLG =1). 
+
+It is derived as follows:
+If opeflag in (1 2 7 ) and pseflag=1 and openpubl=1 then pset4flg=1
+If opeflag in (3 4 5 6) and pseflag=1 and openpubl=1 then pset4flg=2
+If opeflag in (1 2 7) and  pseflag=2 and openpubl=1 then pset4flg=3
+If opeflag in (3 4 5 6) and pseflag=2 and openpubl=1 then pset4flg=4
+If opeflag in (3 4 5 6) and pseflag=1 and openpubl=2 then pset4flg=6
+If cyactive=2 then pset4flg=9
+The  United States  Air Force, Naval and  Military Academies  are also included as PSET4FLG=1, even though they are opeflag=3, deferment only. The United States Coast Guard, a nonTitle iv school (OPEFLAG=5)  is also included .",,
+15055,RPTMTH,"Reporting method identifies how institutions report student charges (full academic year or by program)  and the type of cohort (fall or full-year) used to report graduation rate, retention rate and student financial aid data. 
+
+Institutions with standard academic terms (semester, quarter, trimester or 4-1-4 - CALSYS in (1,2,3,4)) report student charges for the full academic year and report graduation rate, retention rate and student financial aid data for a FALL cohort.
+
+Institutions with other academic calendar systems (CALYSYS=5) report student charges for the full academic year  and report graduation rate, retention rate and student financial aid for a FULL-YEAR cohort. Other academic year is a category used to describe ""non-traditional"" calendar systems at 4-year and 2-year degree-granting institutions. These can include schools that offer primarily on-line courses or ""one course at a time."" 
+
+Institutions with calendar systems that differ by program or operate on a continuous basis (e.g., every 2 weeks, monthly or other period - CALSYS in (6,7)) report student charges by program for the entire length of program and report graduation rate, retention rate and student financial aid for a FULL-YEAR cohort.
+
+ACADEMIC YEAR - The period of time generally extending from September to June; usually equated to 2 semesters or trimesters, 3 quarters, or the period covered by a 4-1-4 calendar system. 
+FALL COHORT - The group of students entering in the fall term established for tracking purposes. For the Graduation Rates component, this includes all students who enter an institution as full-time, first-time degree or certificate-seeking undergraduate students during the fall term of a given year. 
+FULL-YEAR COHORT - The group of students entering at any time during the 12-month period September 1 through August 31 that is established for tracking and reporting Graduation Rate (GRS) data for institutions that primarily offer occupational programs of varying lengths. Students must be full time and first time to be considered in the cohort.",,
+15210,`,"Institutional category was derived using the level of offerings reported on the Institutional Characteristics (IC) component and the number and level of awards that were reported on the Completions (C) component.
+
+Category descriptions:
+
+1) Degree-granting, graduate with no undergraduate degrees - These institutions offer a Master's degree, Doctor's degree  or a First-professional degree and do not offer a Bachelor's degree or an Associate's degree. 
+
+2) Degree-granting, primarily baccalaureate or above - These institutions offer a Bachelor's degree, Master's degree,Doctor's degree or a First-professional degree.  Also, the total number of degrees/certificates at or above the bachelor's level awarded divided by the total number of degrees/certificates awarded is greater than 50 percent. 
+
+3) Degree-granting, not primarily baccalaureate or above - These institutions offer a Bachelor's degree, Master's degree, Doctor's degree,or a First-professional degree.  Also, the total number of degrees/certificates at or above the bachelor's level awarded divided by the total number of degrees/certificates awarded must be less than or equal to 50 percent.
+
+4) Degree-granting, Associate's and certificates - Institutions offer an Associate's degree and may offer other postsecondary certificates, awards or diplomas of less than one academic year; at least one but less-than two academic years; at least two but less-than four academic years. This category also includes institutions that offer a postbaccalaureate certificate, Post-master's certificate or a First-professional certificate and the highest degree offered is an Associate's degree.
+
+5) Nondegree-granting, above the baccalaureate - Institutions do not offer Associate's, Bachelor's, Master's, Doctor's or First-professional degrees, but offer either Postbaccaulaureate, Post-master's or First-professional certificates. 
+
+6) Nondegree-granting, sub-baccalaureate - Institutions do not offer Associate's, Bachelor's , Master's, Doctor's, or First-professional degrees, or certificates above the baccalaureate level. They do offer postsecondary certificates, awards or diplomas of less than one academic year; at least one but less than two academic years; or at least two but less than four academic years.
+
+Technical details for Institutional Category (INSTCAT):
+
+Total degrees and certificates and total bachelor's degrees and all other degrees/certificates above the bachelor's degree awarded are derived using data from the Completions component.
+
+Total bachelor's degrees and all other degrees/certificates above the bachelor's degree is the sum of: 
+
+Bachelor's degrees (CTOTALT,AWLEVEL=5,MAJORNUM=1)
+Postbaccalaureate certificates (CTOTALT,AWLEVEL=6,MAJORNUM=1)
+Master's degrees (CTOTALT,AWLEVEL=7,MAJORNUM=1)
+Post-master's certificates (CTOTALT,AWLEVEL=8,MAJORNUM=1)
+Doctor's degrees (CTOTALT,AWLEVEL=9,MAJORNUM=1)
+First-professional degrees (CTOTALT,AWLEVEL=10,MAJORNUM=1)
+First-professional certificates (CTOTALT,AWLEVEL=11,MAJORNUM=1)
+
+Total degrees and certificates is the sum of Bachelor degrees and all other degrees/certificates above the bachelors degree as defined above added to the following:
+
+Associate's degrees (CTOTALT,AWLEVEL=3,MAJORNUM=1)
+Postsecondary certificates, awards or diplomas of at least two but less-than four academic years 
+   (CTOTALT,AWLEVEL=4, MAJORNUM=1).
+Postsecondary certificates, awards or diplomas of at least one but less-than two academic years
+   (CTOTALT,AWLEVEL=2,MAJORNUM=1); 
+Postsecondary certificates, awards or diplomas of less than one academic year 
+    (CTOTALT,AWLEVEL=1,MAJORNUM=1) 
+
+Institutions are classified as Degree-granting (DEGGRANT=1) or Nondegree-granting(DEGGRANT=2) using level of offerings data reported on the Institutional Characteristics component. Degree-granting institutions offer an Associate's (LEVEL3=1),Bachelor's (LEVEL5=1, Master's (LEVEL7=1), Doctoral (LEVEL9=1), or a First-Professional (LEVEL10=1) degree. Any institution that offers only certificates are Nondegree-granting.
+
+Nondegree-granting institutions that offer a postbaccalaureate certificate (LEVEL6=1) or a post-master's certificate (LEVEL8=1) or a First-professional certificate (LEVEL11=1) are classified as Nondegree-granting, above the baccalaureate (INSTCAT=5).
+
+Nondegree-granting institutions that only offer certificates of less-than four academic years are classified as Nondegree-granting, sub-baccalaureate (INSTCAT=6).
+
+Degree-granting institutions whose highest degree granted are Associate's (HDEGOFFR=40) are classified as Degree-granting, Associate's and certificates (INSTCAT=4). (There are a few 4-year institutions that grant Postbaccalaureate or Post-master's or First-professional certificates in this category).
+
+Degree-granting institutions that do not grant a Bachelor's degree (LEVEL5=0) and do not grant an Associate's degree (LEVEL3=0) are classified as Degree-granting, graduate with no undergraduate degrees (INSTCAT=1).
+
+The remaining degree-granting institutions offer a bachelor's degree or an associate's degree, or both.
+For these institutions a percent of bachelor's degrees and all other degrees/certificates above the bachelor's degree of  total degrees and certificates is generated. If the percent is greater than 50, institutions are classified as Degree-granting, primarily baccalaureate or above (INSTCAT=2), If the percent is 50 or less, institutions are classified as Degree-granting, not primarily baccalaureate or above (INSTCAT=3).
+
+Inactive institutions (CYACTIVE in (2,3)) and administrative units (Sector=0) were coded as not applicable. All Non-Title IV institutions that did not respond to the  IC or Completions components were coded as not reported. 
+Degree-granting institutions whose completions data are reported with their parent institution were assigned the same code as the parent institution.
+New degree-granting institutions that report offering a bachelor's degree on the current institutional characteristics file for the upcoming academic year, and have not yet reported bachelor's degrees on the current completions that covers the previous academic year  June 1-July 30 were assigned as follows:
+
+If an institution reported a zero in any program (CIP code) for bachelor's degrees or above (indicating the level was offered) and did not report a zero for any program (CIP code) at any level below the bachelor's, the institution was classified as Degree-granting, primarily baccalaureate or above. If an institution reported a zero in any program (CIP code) at any level below the bachelor's degree and did not report a zero for any program (CIP code) for bachelor's degrees or above, the institution was classified as Degree-granting, not primarily baccalaureate or above.
+
+For institutions that reported zeros for bachelor's degrees of above and for levels below the bachelor's, the maximum number of programs by level was used to determine the primary classification.",,
+10300,C00CARNEGIE,2000 Carnegie Classification (historical - not updated),,
+15620,C21BASIC,"The Basic Classification is an update of the traditional classification framework developed by the Carnegie Commission on Higher Education in the early 1970s to support its research program. The Basic Classification was originally published for public use in 1973, and subsequently updated in 1976, 1987, 1994, 2000, 2005, 2010, 2015, 2018 and 2021. The 2021 update includes only minor changes. Specifically, the label “Tribal Colleges” has been changed back?to “Tribal Colleges and Universities”. In addition, there is a newly created category “Special Focus Research?Institution”, comprised of the special focus?institutions?that meet the criteria for being considered a “Research University” but confer degrees in a limited range of academic programs. Additionally, the special focus categories of “Engineering Schools” and “Other Technology-Related Schools” have been combined into a single category. 
+
+Classifications are time-specific snapshots of institutional attributes and behavior based on 2019-20 data.  For the full definition and methodology go to https://carnegieclassifications.acenet.edu/classification_descriptions/basic.php
+
+Doctoral universities - Includes institutions that awarded at least 20 research/scholarship doctoral degrees during the update year and also institutions with below 20 research/scholarship doctoral degrees that awarded at least 30 professional practice doctoral degrees in at least 2 programs. Excludes Special Focus Institutions and Tribal Colleges.
+
+The first two categories include only institutions that awarded at least 20 research/scholarship doctoral degrees and had at least $5 million in total research expenditures (as reported through the National Science Foundation (NSF) Higher Education Research & Development Survey (HERD)).
+
+R1: Doctoral Universities – Very high research activity
+R2: Doctoral Universities – High research activity
+D/PU: Doctoral/Professional Universities
+
+Master's Colleges and Universities - Generally includes institutions that awarded at least 50 master's degrees and fewer than 20 doctoral degrees during the update year (with occasional exceptions – see Methodology). Excludes Special Focus Institutions and Tribal Colleges.
+
+Baccalaureate Colleges - Includes institutions where baccalaureate or higher degrees represent at least 50 percent of all degrees but where fewer than 50 master's degrees or 20 doctoral degrees were awarded during the update year. (Some institutions above the master's degree threshold are also included; see Methodology.) Excludes Special Focus Institutions and Tribal Colleges.
+
+Baccalaureate/Associate's Colleges - Includes four-year colleges (by virtue of having at least one baccalaureate degree program)  that conferred more than 50 percent of degrees at the associate's level. Excludes Special Focus Institutions and Tribal Colleges.
+
+Associate's Colleges - Institutions at which the highest level degree awarded is an associate's degree. The institutions are sorted into nine categories based on the intersection of two factors: disciplinary focus (transfer, career & technical or mixed) and dominant student type (traditional, nontraditional or mixed). Excludes Special Focus Institutions and Tribal Colleges.
+
+Special Focus Institutions- Institutions where a high concentration of degrees is in a single field or set of related fields. Excludes Tribal Colleges.
+
+Tribal Colleges - Colleges and universities that are members of the American Indian Higher Education Consortium, as identified in IPEDS Institutional Characteristics.
+
+Classifications are time-specific snapshots of institutional attributes and behavior based on 2016-17 data.
+
+The methodology can be found at  http://carnegieclassifications.iu.edu/definitions.php.",,
+10305,CARNEGIEIC,"Carnegie Classification 2025: Institutional Classification. For more details on the methodology, data sources, criteria, and full lists of institutions by category, see the official Carnegie Classifications site: https://carnegieclassifications.acenet.edu/carnegie-classification/classification-methodology/2025-institutional-classification/",,
+10310,CARNEGIESAEC,"Carnegie Classification 2025: Student Access and Earnings. For more details, see: https://carnegieclassifications.acenet.edu/carnegie-classification/classification-methodology/2025-student-access-and-earnings-classification/",,
+10331,CARNEGIERSCH,"Carnegie Classification 2025:  Research Activity Designation. For more details, see: https://carnegieclassifications.acenet.edu/carnegie-classification/classification-methodology/2025-research-activity-designations/",,
+10315,CARNEGIESIZE,"Carnegie Classification 2025: Institutional Size. For more details, see: https://carnegieclassifications.acenet.edu/",,
+10320,CARNEGIEALF,"Carnegie Classification 2025: Award Level Focus. For more details, see: https://carnegieclassifications.acenet.edu/",,
+10325,CARNEGIEAPM,"Carnegie Classification 2025: Undergraduate Academic Program Mix. For more details, see:  https://carnegieclassifications.acenet.edu/",,
+10330,CARNEGIEGPM,"Carnegie Classification 2025: Graduate Academic Program Mix. For more details, see: https://carnegieclassifications.acenet.edu/",,
+15225,LANDGRNT,"Land Grant Institution
+
+A land-grant college or university is an institution that has been designated by its state legislature or Congress to receive the benefits of the Morrill Acts of 1862 and 1890. The original mission of these institutions, as set forth in the first Morrill Act, was to teach agriculture, military tactics, and the mechanic arts as well as classical studies so that members of the working classes could obtain a liberal, practical education. 
+
+Over the years, land-grant status has implied several types of federal support. The first Morrill Act provided grants in the form of federal lands to each state for the establishment of a public institution to fulfill the act's provisions. At different times money was appropriated through legislation such as the second Morrill Act and the Bankhead-Jones Act, although the funding provisions of these acts are no longer in effect. Today, the Nelson Amendment to the Morrill Act provides a permanent annual appropriation of $50,000 per state and territory. 
+
+A key component of the land-grant system is the agricultural experiment station program created by the Hatch Act of 1887. The Hatch Act authorized direct payment of federal grant funds to each state to establish an agricultural experiment station in connection with the land-grant institution there. The amount of this appropriation varies from year to year and is determined for each state through a formula based on the number of small farmers there. A major portion of the federal funds must be matched by the state. 
+
+To disseminate information gleaned from the experiment stations' research, the Smith-Lever Act of 1914 created a Cooperative Extension Service associated with each U.S. land-grant institution. This act authorized ongoing federal support for extension services, using a formula similar to the Hatch Act's to determine the amount of the appropriation. This act also requires that the states provide matching funds in order to receive the federal monies.
+
+Passage of the First Morrill Act (1862) reflected a growing demand for agricultural and technical education in the United States. While a number of institutions had begun to expand upon the traditional classical curriculum, higher education was still widely unavailable to many agricultural and industrial workers. The Morrill Act was intended to provide a broad segment of the population with a practical education that had direct relevance to their daily lives.
+
+The Second Morrill Act (1890) sought to extend access to higher education by providing additional endowments for all land-grants, but prohibiting distribution of money to states that made distinctions of race in admissions. However, states that provided a separate land-grant institution for blacks were eligible to receive the funds. The institutions that, as a result of this act, were founded or designated the land-grant for blacks in each of the then-segregated Southern states came to be known as ""the 1890 land-grants.""  Native American tribal colleges are sometimes called the ""1994 land-grants.""
+
+For more information on Land Grant Institutions see 
+
+https://www.aplu.org/about-us/history-of-aplu/what-is-a-land-grant-university/
+
+https://www.nifa.usda.gov/land-grant-colleges-and-universities-partner-website-directory",,
+23357,INSTSIZE,"Institution size category based on total students enrolled for credit, Fall 2019",,
+16066,F1SYSTYP,"Multi-institution or multi-campus organization
+
+Is the institution part of a multi-institution or multi-campus organization that owns, governs, or controls the institution?
+
+A multi-institution or multi-campus organization includes organizations with two or more institutions or campuses.
+
+Non-postsecondary education agencies that govern or control institutions include, but are not limited to, public school districts, art organizations, hospitals and other medical/health organizations.
+
+Not included are:
+
+coordinating systems
+single institution owner
+single institution corporate name
+single institution governing board
+consortia
+associations
+religious affiliation (requested in control question)",,
+16071,F1SYSNAM,"Name of multi-institution or multi-campus organization
+
+Is the institution part of a multi-institution or multi-campus organization that owns, governs, or controls the institution?
+
+A multi-institution or multi-campus organization includes organizations with two or more institutions or campuses.
+
+Non-postsecondary education agencies that govern or control institutions include, but are not limited to, public school districts, art organizations, hospitals and other medical/health organizations.
+
+Not included are:
+
+coordinating systems
+single institution owner
+single institution corporate name
+single institution governing board
+consortia
+associations
+religious affiliation (requested in control question)",,
+16070,F1SYSCOD,"Identification number of multi-institution or multi-campus organization
+
+A multi-institution or multi-campus organization includes organizations with two or more institutions or campuses.
+
+Non-postsecondary education agencies that govern or control institutions include, but are not limited to, public school districts, art organizations, hospitals and other medical/health organizations.
+
+Not included are:
+
+coordinating systems
+single institution owner
+single institution corporate name
+single institution governing board
+consortia
+associations
+religious affiliation (requested in control question)",,
+16086,CBSA,"Core Based Statistical Area (CBSA) - 5-digit code that identifies the Core Based Statistical Area,that an institution's address is associated with.  If an institution is not associated with a CBSA the value of this variable is not applicable (-2).
+
+A CBSA is a geographic entity consisting of the county or counties associated with at least one core (urbanized area or urban cluster) of at least 10,000 population, plus adjacent counties having a high degree of social and economic integration with the core as measured through commuting ties with the counties containing the core.  Metropolitan and Micropolitan Statistical Areas are the two categories of Core Based Statistical Areas.
+
+Metropolitan Statistical Area - A Core Based Statistical Area associated with at least one urbanized area that has a population of at least 50,000. 
+
+Micropolitan Statistical Area - A Core Based Statistical Area associated with at least one urban cluster that has a population of at least 10,000, but less than 50,000.
+
+To identify whether a CBSA is a Metropolitan Statistical Area or Micropolitan Statistical Area see variable CBSATYPE - CBSA Type Metropolitan or Micropolitan.
+
+Metropolitan, micropolitan, and CSA codes are based on the U.S. Office of Management and Budget’s (OMB) 2020 Core Based Statistical Area standards updated as of July 21, 2023.",,
+16091,CBSATYPE,"CBSA Type Metropolitan or Micropolitan - Indicates whether the CBSA is a metropolitan or micropolitan statistical area.
+
+Metropolitan Statistical Area - A Core Based Statistical Area associated with at least one urbanized area that has a population of at least 50,000. 
+
+Micropolitan Statistical Area - A Core Based Statistical Area associated with at least one urban cluster that has a population of at least 10,000, but less than 50,000.
+
+Metropolitan, micropolitan, and CSA codes are based on the U.S. Office of Management and Budget’s (OMB) 2020 Core Based Statistical Area standards updated as of July 21, 2023.",,
+16096,CSA,"Combined Statistical Area (CSA) - 3-digit code that identifies the Combined Statistical Area, that an institutions's address is associated with.  If an institution is not associated with a CSA the value of this variable is not applicable (-2).
+
+A CSA is a geographic entity consisting of two or more adjacent Core Based Statistical Areas (CBSAs).  A Combined Statistical Area may comprise two or more Metropolitan Statistical Areas, a Metropolitan Statistical Area and a Micropolitan Statistical Area, two or more Micropolitan Statistical Areas, or multiple Metropolitan and Micropolitan Statistical Areas that have social and economic ties as measured by commuting, but at lower levels than are found among counties within Metropolitan and Micropolitan Statistical Areas.
+
+Metropolitan, micropolitan, and CSA codes are based on the U.S. Office of Management and Budget’s (OMB) 2020 Core Based Statistical Area standards updated as of July 21, 2023.",,
+16116,COUNTYCD,"FIPS county number (two digit FIPS state numeric code + three digits FIPS county code) based on the location of the school. County codes are based on TIGER 2023.
+
+The Census Bureau introduced new county equivalent planning regions for Connecticut in 2022 (TIGER 2022). The previous 8 counties were replaced with 9 county equivalent entities. For more information about changes to Connecticut counties, see discussion from the Census Bureau’s Geography Division. https://www.census.gov/programs-surveys/geography/technical-documentation/county-changes/2020.html",,
+16121,COUNTYNM,"County name -  based on the location of the school. (based on Tiger 2023)
+
+The Census Bureau introduced new county equivalent planning regions for Connecticut in 2022 (TIGER 2022). The previous 8 counties were replaced with 9 county equivalent entities. For more information about changes to Connecticut counties, see discussion from the Census Bureau’s Geography Division. https://www.census.gov/programs-surveys/geography/technical-documentation/county-changes/2020.html",,
+16126,CNGDSTCD,"Congressional district code based on the location of the school. FIPS numeric code for the congressional districts that are legislatively defined subdivision of the state for the purpose of electing representatives to the House of Representative of the United States Congress. The first two digits are the FIPS state numeric code, which makes the congressional district code unique across states. The Congressional Districts Codes are two-digit numeric codes used to represent the congressional districts of each multi-district state of the United States. For example, the First Congressional District is identified as “01,” the Second Congressional District as “02,” etc. The Congressional District in a state with only a single representative elected “at large” is designated as “00.” In the 118h Congress, this applies to Alaska, Delaware, North Dakota, South Dakota, Vermont, and Wyoming. For an entity with a nonvoting delegate—the District of Columbia, American Samoa, Guam, Northern Mariana Islands, Puerto Rico (whose delegate is referred to as a “resident commissioner”), and the U.S. Virgin Islands—the representational area is designated as “98.” Those entities with no representation in the Congress—the Marshall Islands, Palau, and the several U.S. minor outlying islands are designated as “-2.”
+
+Congressional District codes in TIGER 2023 represent the 118th Congress",,
+16106,LONGITUD,"Longitude: Based on the location of the school, the value of LONGITUD ranges from -170 to 171. The minus sign (-) indicates west of the prime meridian. It contains an explicit decimal point. The digits to the left of the decimal point represent the number of degrees from the prime meridian; the digits to the right of the decimal point represent the fraction of the next degree carried out to six decimal places.",,
+16111,LATITUDE,"Latitude: Based on the location of the school, the value of LATITUDE ranges from -14 to 71. It contains an explicit decimal point. The digits to the left of the decimal represent the number of degrees from the equator; the digits to the right of the decimal represent the fraction of the next degree carried out to six decimal places.",,
+15230,DFRCGID,"Data Feedback Report comparison group category. - This indicator was used to create the automatic comparison groups in the IPEDS Data Feedback Report, when institutions did not provide their own comparison group. 
+
+All institutions that participated in Title IV federal financial aid programs were first separated into degree-granting and nondegree-granting groups by control of institution (public, private not-for-profit and private for-profit). 
+
+Degree-granting institutions were divided into the following groups using the institution category variable: graduate and 4-year primarily baccalaureate and above; 4-year primarily associate's; and 2-year degree-granting. The Carnegie Classification Basic 2021 was then used further classify degree-granting institutions within the 4 groups. The highest degree offered was used for 4-year degree-granting institutions that did not have a carnegie classification. 
+
+The majority of nondegree-granting institutions were grouped by their largest program. The largest program was based on the largest program identified by the cipcode, that the institution reported on the student cost section of the institutional characteristics component. The programs are business (52), communications and communication technologies(09,10), cosmetology(12.04), engineering and engineering technologies(14,15) , manufacturing, construction, repair, and transportation (46,47,48,49) and health (51). All other cipcodes were combined for the other programs category. 
+
+When the above methodolgy yielded small comparison groups (< 4 schools), groups of different controls maybe combined or a 4-year primarily associates maybe combined with a 4-year baccalaureate and above group. 
+
+When the above methodology yielded large groups (greater than 40), groups were further subdivided by size, based on 12-month enrollment, (See cosmetology groups above). 
+
+Special groups were made for the Tribal colleges, U.S. service institutions, and institutions in other jurisdictions, such as Puerto Rico.
+
+Prior to the 2018 data feedback reports Distance learning ""Only"" institutions were classified as one group. Beginning with the  2018 report distance learning ""Only"" were classified based on their Carnegie Classification.",,
+16000,DFRCUSCG,"Identifies institutions that created a custom comparison group for use in the IPEDS Data Feedback Report (DFR).
+
+When using the by groups option to select instititutions in the Data Center, the custom comparison group is referenced as the ""Saved group"" and the comparison group created by NCES is referenced as the ""Automatic group""",,
