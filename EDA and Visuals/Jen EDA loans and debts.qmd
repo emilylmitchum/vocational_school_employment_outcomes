@@ -142,7 +142,7 @@ loanyear_fig2 <- loanyear_fig2 %>%
 loanyear_fig2
 ```
 
-# IPEDS Tuition and loan
+# IPEDS Tuition
 
 ```{r}
 #load the tuition data 
@@ -185,32 +185,404 @@ tuition_debt_join2 <- tuition_debt_join %>%
     arrange(Year, degree_granting)
 ```
 
+# IPEDS Enrollment by demographic join
+
 ```{r}
-#create plotly line graph of debt amount and tuition
-tuition_debt_fig <- plot_ly(tuition_debt_join2,
-                       x=~Year, y =~Average_debt_outstanding * 1000000, 
-                       name = "Average_debt_outstanding",
+#load the enrollment by demographics data 
+enroll_dem <- read.csv("Cleaned data/Cleaned_ipeds_totals_summary_state_demographics.csv")
+#names(enroll_dem)
+#head(enroll_dem)
+
+#create subset, only keep certain columns 
+enroll_dem_subset <- enroll_dem[, c("state", "state_fips_code", "year", "trade_school_check", "Level.and.degree.certificate.seeking.status.of.student", "Undergraduate.or.graduate.level.of.student", "Grand.total", "Grand.total.men", "Grand.total.women")]
+
+#rename year column 
+enroll_dem_rename <- enroll_dem_subset %>%
+    rename(Year = year)
+
+#keep only trade school enrollment 
+enroll_dem_trade <- enroll_dem_rename %>%
+    filter(trade_school_check == 1)
+```
+
+```{r}
+#summarize enrollment by year
+enroll_summarize <- enroll_dem_trade %>%
+    group_by(Year) %>%
+    summarize(Average_enroll = mean(Grand.total, na.rm = TRUE))
+```
+
+```{r}
+#join enroll summarize data with the join tuition and debt data 
+tuition_debt_enroll <- left_join(tuition_debt_join2,enroll_summarize, by = "Year")
+```
+
+```{r}
+#add 'tuition' to degree granting values for plot legend 
+tuition_debt_enroll$degree_granting <- paste0(tuition_debt_enroll$degree_granting, " Tuition")
+
+#set degree_granting as factor 
+tuition_debt_enroll$degree_granting <- as.factor(tuition_debt_enroll$degree_granting)
+
+```
+
+# Visuals - Debt, tuition, and enrollment
+
+```{r}
+#create plotly line graph of debt amount, tuition, and enrollment
+tuition_debt_enroll_fig <- plot_ly(tuition_debt_enroll,
+              x =~Year, y = ~Average_enroll,  #average enrollment bars
+              name = "Average Enrollment",
+              type = "bar",
+              text = ~paste("Year: ", Year, "<br>", "Average Enrollment: ", Average_enroll), hoverinfo = "text", textposition = "none", opacity = 0.4) %>%
+add_trace(tuition_debt_enroll,  #average tuition lines
+              x =~Year, y =~Average.Tuition...Feeds, 
+              name = ~degree_granting,
+              type = 'scatter',
+              mode = 'lines+markers',
+              split = ~degree_granting,
+              color = ~degree_granting,
+              text = ~paste("Year: ", Year, "<br>", "Tuition: ", Average.Tuition...Feeds), hoverinfo = "text", 
+              textposition = "none", yaxis = "y2", opacity = 1) %>%
+add_trace(tuition_debt_enroll, #average debts line
+              x =~Year, y =~Average_debt_outstanding, 
+                       name = "Average Debt",
                        type = 'scatter',
                        mode = 'lines+markers',
-                       text = ~paste("Year: ", Year, "<br>", "Average Debt Amount: ", Average_debt_outstanding), hoverinfo = "text", textposition = "none")
-
-tuition_debt_fig <- tuition_debt_fig %>%
-    add_trace(x =~Year, y = ~Average.Tuition...Feeds, 
-              name = "Average Tuition",
-              color =~degree_granting,
-              split =~degree_granting,
-              type = 'scatter',
-                       mode = 'lines+markers',
-                       text = ~paste("Year: ", Year, "<br>", "Tuition: ", Average.Tuition...Feeds), hoverinfo = "text", textposition = "none", yaxis = "y2")
-
-#add plot title and axis 
-tuition_debt_fig <- tuition_debt_fig %>%
-    layout(title = "Average Tuition vs. Debt Outstanding from 2017 to 2025",
+                       text = ~paste("Year: ", Year, "<br>", "Average Debt Amount: ", Average_debt_outstanding), hoverinfo = "text", textposition = "none", yaxis = "y2", opacity = 1) %>%
+layout(title = "Average Tuition and Debt vs. Enrollment from 2017 to 2025", #add plot title and axis 
+           barmode = "overlay",
           xaxis = list(title = "Year"),
           yaxis = list(title = "Debt (in thousands)", tickprefix = "$"),
           yaxis2 = list(title = "Tuition (in thousands)",
                        overlaying = "y",
                        side = "right", tickprefix = "$"))
 
-tuition_debt_fig
+tuition_debt_enroll_fig
+```
+
+```{r}
+#export plotly graph 
+htmlwidgets::saveWidget(tuition_debt_enroll_fig, "EDA and Visuals/Tuition_debt_enrollment_plot.html")
+```
+
+# Statistical tests - Debt and tuition and enrollment
+
+```{r}
+#transform debt into factors: low and high debt to fit into model 
+joined_debt_factor <- tuition_debt_enroll 
+
+joined_debt_factor$Average_debt_factor <- ifelse(
+    joined_debt_factor$Average_debt_outstanding < mean(joined_debt_factor$Average_debt_outstanding), "Low Debt", "High Debt")
+    
+
+#transform tuition into factors: low and high tuition to fit into mode
+joined_tuition_factor <- joined_debt_factor 
+
+joined_tuition_factor$Average_tuition_factor <- ifelse( 
+    joined_tuition_factor$Average.Tuition...Feeds < mean(joined_tuition_factor$Average.Tuition...Feeds), "Low Tuition", "High Tuition")
+
+
+```
+
+```{r}
+#convert to factor
+joined_tuition_factor$Average_debt_factor <- as.factor(joined_tuition_factor$Average_debt_factor)
+
+joined_tuition_factor$Average_tuition_factor <- as.factor(joined_tuition_factor$Average_tuition_factor)
+```
+
+```{r}
+#create boxplot of debt and tuition 
+library(ggplot2)
+
+ggplot(joined_tuition_factor, aes(x= Average_tuition_factor, y = Average_enroll , fill = Average_debt_factor)) + 
+geom_boxplot() +
+labs(title = "Distribution of Debt and Tuition and Vocational School Enrollment",
+    x = "Tuition",
+    y = "Enrollment")
+
+```
+
+```{r}
+library(patchwork)
+#v2 boxplot 
+b1 <- ggplot(joined_tuition_factor, aes(x= Average_tuition_factor, y = Average_enroll)) + 
+geom_boxplot() +
+labs(title = "Distribution of Tuition and Vocational School Enrollment",
+    x = "Tuition",
+    y = "Enrollment")
+
+b2 <- ggplot(joined_tuition_factor, aes(x= Average_debt_factor, y = Average_enroll)) + 
+geom_boxplot() +
+labs(title = "Distribution of Debt and Vocational School Enrollment",
+    x = "Debt amount",
+    y = "Enrollment")
+
+b1 + b2
+```
+
+```{r}
+#save boxplot 
+ggsave("EDA and Visuals/Debt_tuition_enroll_boxplot.png")
+```
+
+```{r}
+#check assumptions for ANOVA normality and homogeneity of variance
+#shapiro-wilk test for each group 
+shapiro.test(joined_tuition_factor$Average_enroll[joined_tuition_factor$Average_tuition_factor == "Low Tuition"])
+
+shapiro.test(joined_tuition_factor$Average_enroll[joined_tuition_factor$Average_tuition_factor == "High Tuition"])
+
+shapiro.test(joined_tuition_factor$Average_enroll[joined_tuition_factor$Average_debt_factor == "Low Debt"])
+
+shapiro.test(joined_tuition_factor$Average_enroll[joined_tuition_factor$Average_debt_factor == "High Debt"])
+```
+
+Shapiro-Wilk normality test
+
+data: joined_tuition_factor$Average_enroll[joined_tuition_factor$Average_tuition_factor == "Low Tuition"\] W = 0.78283, p-value = 0.0187
+
+data: joined_tuition_factor$Average_enroll[joined_tuition_factor$Average_tuition_factor == "High Tuition"\] W = 0.78283, p-value = 0.0187
+
+data: joined_tuition_factor$Average_enroll[joined_tuition_factor$Average_debt_factor == "High Debt"\] W = 0.67701, p-value = 0.0005107
+
+Shapiro shows less than 0.05, indicating no deviation from normality. Normality assumptions satisfied for all groups.
+
+```{r}
+#homogeneity of variance - Levene's test 
+library(car)
+leveneTest(Average_enroll ~ Average_tuition_factor, data = joined_tuition_factor)
+
+leveneTest(Average_enroll ~ Average_debt_factor, data = joined_tuition_factor)
+```
+
+> leveneTest(Average_enroll \~ Average_tuition_factor, data = joined_tuition_factor) Levene's Test for Homogeneity of Variance (center = median) Df F value Pr(\>F) group 1 0 1 14
+>
+> leveneTest(Average_enroll \~ Average_debt_factor, data = joined_tuition_factor) Levene's Test for Homogeneity of Variance (center = median) Df F value Pr(\>F) group 1 2.5195 0.1348 14
+
+Levene's test greater than 0.05 p-value. Fail to reject null hypothesis of equal variance. No evidence of unequal variances across the four groups of debts and tuitions. Variability in assignement scores appear to be similar for all combinations of debt and tuition, so equal-variance assumtoions for ANOVA is satisfied.
+
+```{r}
+#two way anova 
+debt_tuition_enroll_fit <- aov(Average_enroll ~ Average_tuition_factor * Average_debt_factor, data = joined_tuition_factor)
+summary(debt_tuition_enroll_fit)
+```
+
+Average_debt_factor 1.8e-06 \*\*\*
+
+Null hypothesis: In terms of the effects of tuition - There is no difference in the average vocational school enrollment between low tuition and high tuition.
+
+In terms of the effects of debt - There is no difference in average vocational school enrollment between low debt and high debt
+
+In terms of the interaction - Tuition influence on enrollment does not depend on the debt level, and the debt level influence on enrollment does not depend on the tuition level.
+
+```{r}
+#post-hoc comparision tukey 
+TukeyHSD(debt_tuition_enroll_fit)
+```
+
+High Tuition:High Debt showed higher enrollment than High Tuition:Low Debt with 2.2 difference unit. Same with Low Tuition:Low Debt-High Tuition:High Debt, High Tuition:Low Debt-Low Tuition:High Debt, Low Tuition:Low Debt-Low Tuition:High Debt.
+
+High Tuition:Low Debt had lower enrollment that Low Tuition:Low Debt with difference -1.16 unit.
+
+```{r}
+#assumption checks 
+par(mfrow = c(1,2))
+plot(debt_tuition_enroll_fit, which = 1)    # Residuals vs Fitted (homoscedasticity)
+plot(debt_tuition_enroll_fit, which = 2)    # Normal Q-Q (normality)
+```
+
+# Visuals - Loan and enrollment
+
+```{r}
+#summarize types of loans 
+loan_summarize <- clean_loanyear_drop %>%
+    group_by(Year) %>%
+    summarize(Average_loan_outstanding = mean(Total_Dollars_Loan_Outstanding, na.rm = TRUE), Average_loan_recipients = mean(Total_Loan_Recipients, na.rm = TRUE))
+```
+
+```{r}
+#load the enrollment by demographics including trade school and non trade schools 
+enroll_trade_college <- read.csv("Cleaned data/Cleaned_ipeds_summary_state_demographics.csv")
+
+#create subset, only keep certain columns 
+enroll_trade_college_subset <- enroll_trade_college[, c("state", "state_fips_code", "year", "trade_school_check", "Level.and.degree.certificate.seeking.status.of.student", "Undergraduate.or.graduate.level.of.student", "Grand.total")]
+
+#rename year column 
+enroll_trade_college_rename <- enroll_trade_college_subset %>%
+    rename(Year = year)
+```
+
+```{r}
+#add 'enrollment' to undergrad and all student level column
+enroll_trade_college_rename2 <- enroll_trade_college_rename 
+
+enroll_trade_college_rename2$Undergraduate.or.graduate.level.of.student <- paste0(enroll_trade_college_rename2$Undergraduate.or.graduate.level.of.student, " Enrollment")
+
+#set undergrad and all student level as factor
+enroll_trade_college_rename2$Undergraduate.or.graduate.level.of.student <- as.factor(enroll_trade_college_rename2$Undergraduate.or.graduate.level.of.student)
+
+#summarize enrollments by year and undergrad level factor
+enroll_trade_college_summarize <- enroll_trade_college_rename2 %>%
+    group_by(Year, Undergraduate.or.graduate.level.of.student) %>%
+    summarize(Average_enroll = mean(Grand.total, na.rm = TRUE))
+
+```
+
+```{r}
+#join with enrollment data with loan data 
+loan_enroll_trade_college_join <- left_join(enroll_trade_college_summarize, loan_summarize,  by = "Year")
+
+```
+
+```{r}
+#transform Year into numeric 
+#loan_enroll_trade_college_join$Year <- as.numeric(as.character(loan_enroll_trade_college_join$Year))
+
+#aggregate the data by year to remove the Undergraduate.or.graduate.level.of.student filter 
+loan_enroll_trade_college_join2 <- loan_enroll_trade_college_join %>%
+    group_by(Year) %>%
+    summarize(Average_loan = mean(Average_loan_outstanding, na.rm = TRUE),
+             Average_loan_number = mean(Average_loan_recipients, na.rm = TRUE),
+             Average_enrollment = mean(Average_enroll, na.rm = TRUE),
+             .groups = "drop")
+```
+
+```{r}
+#create plotly line graph of loan amount and loan number with college vs. trade enrollment
+loan_enroll_fig <- plot_ly(loan_enroll_trade_college_join,
+              x =~Year, y = ~Average_enroll,  #average enrollment bars
+              #name = ~Undergraduate.or.graduate.level.of.student,
+              type = "bar",
+              color =~Undergraduate.or.graduate.level.of.student,
+              split =~Undergraduate.or.graduate.level.of.student,
+                  text = ~paste("Year: ", Year, "<br>", "Average Enrollment: ", Average_enroll, "<br>", "Enrollment Group: ", Undergraduate.or.graduate.level.of.student), hoverinfo = "text", textposition = "none", opacity = 0.4) %>% add_trace(data = loan_enroll_trade_college_join2,  
+              x =~Year, y =~Average_loan,
+              name = "Average Loan Amount",
+              #color = I("red"),
+              inherit = FALSE,
+              type = 'scatter',
+              mode = 'lines+marker',
+              text = ~paste("Year: ", Year, "<br>", "Loan Amount: ", Average_loan), hoverinfo = "text", 
+              textposition = "none", opacity = 1) %>% add_trace(data = loan_enroll_trade_college_join2,  
+              x =~Year, y =~Average_loan_number, 
+              name = "Average Number of Loans",
+              #color = I("orange"),
+              inherit = FALSE,
+              type = 'scatter',
+              mode = 'lines+marker',
+              text = ~paste("Year: ", Year, "<br>", "Number of Loans: ", Average_loan_number), hoverinfo = "text", 
+              textposition = "none", yaxis = "y2", opacity = 1) %>% layout(title = "Average Loan Amount and Recipient \n and College vs. Trade Enrollment from 2014 to 2025", 
+           barmode = "group",
+          xaxis = list(title = "Year"),
+          yaxis = list(title = "Tuition Amount (in thousands)"),
+          yaxis2 = list(title = "Number of Loans",
+                       overlaying = "y",
+                       side = "right"))
+loan_enroll_fig 
+```
+
+```{r}
+#export plotly graph 
+htmlwidgets::saveWidget(loan_enroll_fig , "EDA and Visuals/Loans_enrollment_plot.html")
+
+```
+
+# Statistical tests - loans and enrollment ANOVA
+
+```{r}
+#transform loan amount into factors: low and high loan to fit into model 
+joined_loan_enroll_factor <- loan_enroll_trade_college_join
+
+joined_loan_enroll_factor$Average_loan_factor <- ifelse(joined_loan_enroll_factor$Average_loan_outstanding < mean(joined_loan_enroll_factor$Average_loan_outstanding), "Low Loan Amount", "High Loan Amount")
+
+#transform number of loans into factors: low and high loan count 
+joined_loan_enroll_factor$Average_loan_number_factor <- ifelse(joined_loan_enroll_factor$Average_loan_recipients < mean(joined_loan_enroll_factor$Average_loan_recipients), "Low Loan Count", "High Loan Count")
+
+
+```
+
+```{r}
+#convert to factors
+joined_loan_enroll_factor$Average_loan_factor <- as.factor(joined_loan_enroll_factor$Average_loan_factor)
+
+joined_loan_enroll_factor$Average_loan_number_factor <- as.factor(joined_loan_enroll_factor$Average_loan_number_factor)
+```
+
+```{r}
+#create boxplot of loans and enrollment
+ggplot(joined_loan_enroll_factor, aes(x= Average_loan_outstanding, y = Average_enroll , fill = Average_loan_recipients)) + 
+geom_boxplot() +
+labs(title = "Distribution of Loans and Enrollment",
+    x = "Loan Amount",
+    y = "Enrollment")
+
+```
+
+```{r}
+#save boxplot 
+ggsave("EDA and Visuals/Loan_enroll_boxplot.png")
+```
+
+```{r}
+#create subset of trade school enrollment 
+# loan_enroll_trade <- joined_loan_enroll_factor %>%
+#     filter(Undergraduate.or.graduate.level.of.student == "All students total Enrollment")
+
+# #create subset of undergrad enrollment 
+# loan_enroll_college <- joined_loan_enroll_factor %>%
+#     filter(Undergraduate.or.graduate.level.of.student == "Undergraduate Enrollment")
+
+```
+
+```{r}
+#check assumptions for ANOVA normality and homogeneity of variance on trade school enroll subset
+#shapiro-wilk test for each group 
+shapiro.test(joined_loan_enroll_factor$Average_enroll[joined_loan_enroll_factor$Average_loan_outstanding == "Low Loan Amount"])
+
+shapiro.test(joined_loan_enroll_factor$Average_enroll[joined_loan_enroll_factor$Average_loan_outstanding == "High Loan Amount"])
+
+shapiro.test(joined_loan_enroll_factor$Average_enroll[joined_loan_enroll_factor$Average_loan_recipients == "Low Loan Count"])
+
+shapiro.test(joined_loan_enroll_factor$Average_enroll[joined_loan_enroll_factor$Average_loan_recipients == "High Loan Count"])
+```
+
+data: joined_loan_enroll_factor$Average_enroll[joined_loan_enroll_factor$Average_loan_outstanding == "Low Loan Amount"\] W = 0.78708, p-value = 0.08099
+
+data: joined_loan_enroll_factor$Average_enroll[joined_loan_enroll_factor$Average_loan_outstanding == "High Loan Amount"\] W = 0.72916, p-value = 0.01236
+
+data: joined_loan_enroll_factor$Average_enroll[joined_loan_enroll_factor$Average_loan_recipients == "Low Loan Count"\] W = 0.78708, p-value = 0.08099
+
+data: joined_loan_enroll_factor$Average_enroll[joined_loan_enroll_factor$Average_loan_recipients == "High Loan Count"\] W = 0.72916, p-value = 0.01236
+
+Shapiro shows greater than 0.05 for low loan amount and low loan count, indicating there is deviation from normality. Normality assumptions not satisfied for all groups.
+
+```{r}
+#homogeneity of variance - Levene's test 
+leveneTest(Average_enroll ~ Average_loan_outstanding, data = joined_loan_enroll_factor)
+
+leveneTest(Average_enroll ~ Average_loan_recipients, data = joined_loan_enroll_factor)
+```
+
+leveneTest(Average_enroll \~ Average_loan_recipientLevene's Test for Homogeneity of Variance (center = median) Df F value Pr(\>F) group 1 0.0174 0.8982 8\
+s, data = joined_loan_enroll_factor)
+
+> leveneTest(Average_enroll \~ Average_loan_recipients, data = joined_loan_enroll_factor) Levene's Test for Homogeneity of Variance (center = median) Df F value Pr(\>F) group 1 0.0174 0.8982 8
+
+Levene's test greater than 0.05 p-value. Fail to reject null hypothesis of equal variance. No evidence of unequal variances across the four groups of loan amounts and number of loan levels. Variability in enrollment appear to be similar for all combinations of loan amount and number of loans, so equal-variance assumptions for ANOVA is satisfied.
+
+```{r}
+#two way anova 
+loan_enroll_fit <- aov(Average_enroll ~ Average_loan_outstanding + Average_loan_recipients + (Average_loan_outstanding * Average_loan_recipients), data = joined_loan_enroll_factor)
+summary(loan_enroll_fit)
+```
+
+Average_loan_outstanding 1 1.214e+08 1.214e+08 0.024 Average_loan_recipients 1 1.956e+07 1.956e+07 0.004 Average_loan_outstanding:Average_loan_recipients 1 4.100e+07 4.100e+07 0.008 Residuals 6 3.047e+10 5.078e+09\
+Pr(\>F) Average_loan_outstanding 0.882 Average_loan_recipients 0.953 Average_loan_outstanding:Average_loan_recipients 0.931
+
+Neither loan amount or number of loans were significant predictors for enrollment. Fail to reject the null hypothesis.
+
+```{r}
+
 ```
