@@ -583,6 +583,164 @@ Pr(\>F) Average_loan_outstanding 0.882 Average_loan_recipients 0.953 Average_loa
 
 Neither loan amount or number of loans were significant predictors for enrollment. Fail to reject the null hypothesis.
 
+# Heatmap by debt and enrollment in trade schools
+
 ```{r}
+#clean up debt data, keep only year, quarter, total dollars outstanding, and total dollars borrowed fields 
+# clean_debt2 <- clean_debtyear_drop %>%
+#     group_by(Year) %>%
+#     summarize(Avg_Debt_Amount = mean(Total_Dollars_Outstanding, na.rm = TRUE),
+#              Avg_Debt_Borrowed = mean(Total_Dollars_Borrowers, na.rm = TRUE))
+```
+
+```{r}
+#load enrollment data
+ipeds_state_summary_2024 <- read.csv("Cleaned data/Cleaned_ipeds_summary_2024_state_demographics.csv")
+#ipeds_state_summary <- read.csv("Cleaned data/Cleaned_ipeds_summary_state_demographics.csv")
+debt_state <- read.csv("Cleaned data/Cleaned_debt_by_location.csv")
+```
+
+```{r}
+#names(debt_state)
+#summarize debt amount to get total and summarize debt borrowers to get total 
+debt_state_sum <- debt_state %>%
+    mutate(Total_Debt_Amount = rowSums(across(c("Less_than_5k_Dollars_Outstanding_.in.billions.", "X5k_to_10K_Dollars_Outstanding_.in.billions.", "X10k_to_20K_Dollars_Outstanding_.in.billions.", "X20k_to_40K_Dollars_Outstanding_.in.billions.", "X40k_to_60K_Dollars_Outstanding_.in.billions.", "X60k_to_80K_Dollars_Outstanding_.in.billions.", "X80k_to_100K_Dollars_Outstanding_.in.billions.", "X100k_to_200K_Dollars_Outstanding_.in.billions.", "X200K_plus_Dollars_Outstanding_.in.billions."))))
+
+debt_state_sum2 <- debt_state_sum %>%
+    mutate(Total_Debt_Borrowers = rowSums(across(c("Less_than_5k_Borrowers_.in.thousands.", "X5k_to_10k_Borrowers_.in.thousands.", "X10k_to_20k_Borrowers_.in.thousands.", "X20k_to_40k_Borrowers_.in.thousands.", "X40k_to_60k_Borrowers_.in.thousands." , "X60k_to_80k_Borrowers_.in.thousands." , "X80k_to_100k_Borrowers_.in.thousands.", "X100k_to_200k_Borrowers_.in.thousands.", "X200k_plus_Borrowers_.in.thousands."))))
+
+#rename state
+debt_state_sum2 <- debt_state_sum2 %>%
+    rename(state = States)
+```
+
+```{r}
+## Heat map: debt amount by state
+
+library(tidyverse)
+
+# Isolate the state and count of students for trade schools vs not
+state_counts_wide <- ipeds_state_summary_2024 |>
+  select(state, state_fips_code, trade_school_check, Grand.total)
+
+state_counts_wide$Grand.total <- as.numeric(state_counts_wide$Grand.total)
+
+# Pivot wider so trade school counts both get their own columns
+state_counts_wide <- state_counts_wide |>
+  pivot_wider(
+    names_from = trade_school_check,
+    values_from = Grand.total,
+    names_prefix = "trade_school_"
+  ) 
+
+# Convert NA to 0 (so addition doesn't break)
+state_counts_wide <- state_counts_wide |>
+  mutate(
+    trade_school_False = ifelse(is.na(trade_school_False), 0, trade_school_False),
+    trade_school_True  = ifelse(is.na(trade_school_True), 0, trade_school_True)
+  )
+
+# Add a combined total column
+state_counts_wide <- state_counts_wide |>
+  mutate(total_students_combined = trade_school_False + trade_school_True)
+
+# Add a percentage of total in trade school and traditional 4-year schools
+state_counts_wide <- state_counts_wide |>
+  mutate(
+    percent_trade_school = (trade_school_True /total_students_combined) * 100,
+    percent_traditional_school = (trade_school_False / total_students_combined) * 100
+  )
+
+# Drop US territories and Washington DC (50 state map scope)
+state_counts_wide <- state_counts_wide |> filter( !state %in% c("American Samoa", "Marshall Islands", "Northern Marianas", "Virgin Islands", "Guam", "Micronesia", "Palau", "Puerto Rico", "District of Columbia"))
+
+# Get the lat/long values for the middle of each state
+state_coord_lookup <- data.frame(
+  state = state.name,
+  lon = state.center$x,
+  lat = state.center$y
+)
+
+# Merge coordinates into trade school data
+label_data <- state_counts_wide |>
+  left_join(state_coord_lookup, by = "state")
+
+# Make offsets for the labels of small states so they don't overlap
+offsets <- tribble(
+  ~state, ~lon_offset, ~lat_offset,
+  "Connecticut",     0.2,   -0.3,  # 1.2, -0.3
+  "Rhode Island",    1.4,    0.3,
+  "Massachusetts",   1.2,    0.6,
+  "New Jersey",      1.0,   -0.5,
+  "Delaware",        1.0,   -0.2,
+  "Maryland",        0.8,   -0.3,
+  "Vermont",         0.6,    0.5,
+  "New Hampshire",   0.8,    0.8,
+  "Hawaii",         24.0,   -5.3,
+  "Alaska",         11.5,  -22.0,
+)
+
+label_data <- label_data |>
+  left_join(offsets, by = "state") |>
+  mutate(
+    lon_plot = ifelse(is.na(lon_offset), lon, lon + lon_offset),
+    lat_plot = ifelse(is.na(lat_offset), lat, lat + lat_offset)
+  )
+
+#join enrollment with debt data on state
+enrollment_debt_map <- left_join(enroll_rename_year, debt_state_sum2, by = "state")
+```
+
+```{r}
+# Create the heatmap
+debt_enroll_map_fig <- plot_ly() |>
+  add_trace(
+    data = enrollment_debt_map, #state_counts_wide_2024,
+    type = "choropleth",
+    locations = ~state_fips_code,
+    z = ~Total_Debt_Amount, #~percent_trade_school,
+    locationmode = "USA-states",
+    colorscale = "Plasma",
+    colorbar = list(title = "Debt amount (in billions)"),
+    text = ~paste(
+      "State: ", state, "<br>",
+      "Total Debt Amount (in billions): ", Total_Debt_Amount, "<br>",
+      "Total Debt Borrowed (in thousands): ", Total_Debt_Borrowers, "<br>",
+      "Trade School %: ", round(percent_trade_school, 2), "%<br>",
+      "Total Students: ", total_students_combined
+    ),
+    hoverinfo = "text"
+  ) |>
+  add_trace(
+    data = label_data,
+    type = "scattergeo",
+    mode = "text",
+    lon = ~lon_plot,
+    lat = ~lat_plot,
+    #text = ~paste0(round(percent_trade_school), "%"),
+    #text = ~paste0(round(Avg_Debt_Amount)),
+    #textfont = list(size = 11, color = "black"),
+    hoverinfo = "none",
+    showlegend = FALSE
+  ) |>
+  layout(
+    geo = list(
+      scope = "usa",
+      projection = list(type = "albers usa"),
+      showlakes = TRUE,
+      lakecolor = "lightblue"
+    ),
+    title = list(
+      text = "Debt Amount and Percentage of Students Attending Trade Schools by State",
+      y = 0.97,
+      yanchor = "top"
+    )
+  )
+
+debt_enroll_map_fig
+```
+
+```{r}
+htmlwidgets::saveWidget(debt_enroll_map_fig, "EDA and Visuals/Complete Visuals/Debt_enroll_heatmap.html", selfcontained=TRUE)
 
 ```
