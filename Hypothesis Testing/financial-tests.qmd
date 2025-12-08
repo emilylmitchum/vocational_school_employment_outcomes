@@ -28,6 +28,9 @@ head(tuition_df)
 
 emp_ratio_df <- read.csv('/Users/Emi/Library/CloudStorage/GoogleDrive-emilymitchum265@gmail.com/Shared drives/DSAN/DSAN 5100/Final Project/vocational_school_employment_outcomes/Cleaned data/Cleaned_monthly_emp_pop_ratio.csv')
 head(emp_ratio_df)
+
+unemp_df <- read.csv('/Users/Emi/Library/CloudStorage/GoogleDrive-emilymitchum265@gmail.com/Shared drives/DSAN/DSAN 5100/Final Project/vocational_school_employment_outcomes/Cleaned data/Cleaned_monthly_unemployment.csv')
+head(unemp_df)
 ```
 
 # ANOVA on Quarterly Median Weekly Earnings Data
@@ -217,7 +220,7 @@ plot <- plot_ly(roi_clean, x = ~year) %>%
 plot
 ```
 
-## Time Series Analysis Using Employment Population Ratio
+# Time Series Analysis Using Employment Population Ratio
 
 ```{r}
 
@@ -244,26 +247,174 @@ fig <- fig |>
     title = "Employment Population Ratio (2019–2025)",
     xaxis = list(title = "Date"),
     yaxis = list(title = "Employment-Population Ratio"),
-    legend = list(title = list(text = "<b>Education Level</b>")),
-    shapes = list(
-      list(type = 'rect',
-           x0 = "2019-12-01", x1 = "2020-12-01",
-           y0 = 40, y1 = max,
-           line = list(color = 'rgba(0, 0, 255, 0.5)', width = 2),
-           fillcolor = 'rgba(0, 0, 255, 0.2)')
-    ),
-    annotations = list(
-      list(
-        x = "2020-06-01",
-        y = max + 2,
-        text = "COVID-19",
-        showarrow = FALSE,
-        font = list(color = 'black', size = 12)
-      )
-  )
+    legend = list(title = list(text = "<b>Education Level</b>"))
+    # shapes = list(
+    #   list(type = 'rect',
+    #        x0 = "2019-12-01", x1 = "2025-12-01",
+    #        y0 = 40, y1 = max,
+    #        line = list(color = 'rgba(0, 0, 255, 0.5)', width = 2),
+    #        fillcolor = 'rgba(0, 0, 255, 0.2)')
+    # ),
+    # annotations = list(
+    #   list(
+    #     x = "2020-06-01",
+    #     y = max + 2,
+    #     text = "Onset of COVID-19",
+    #     showarrow = FALSE,
+    #     font = list(color = 'black', size = 12)
+    #   )
+  # )
 )
 
 
 fig
 
+```
+
+```{r}
+unemp_df$date <- as.Date(unemp_df$date, "%Y-%m-%d")
+unemp_df$unemployment_rate <- as.numeric(unemp_df$unemployment_rate)
+max <- max(unemp_df$unemployment_rate)
+min <- min(unemp_df$unemployment_rate)
+
+
+fig <- plot_ly(
+  unemp_df,
+  x = ~date,
+  y = ~unemp_df$unemployment_rate,
+  color = ~education_level,        
+  colors = c(
+    "ba_only" = "#E64B35",
+    "some_college_assoc" = "#4DBBD5",
+    "high_school" = "#00A087"
+  ),
+  type = 'scatter',
+  mode = 'lines'
+)
+
+fig <- fig |>
+  layout(
+    title = "Unemployment Rate (2019–2025)",
+    xaxis = list(title = "Date"),
+    yaxis = list(title = "Employment-Population Ratio"),
+    legend = list(title = list(text = "<b>Education Level</b>"))
+      # ,
+    # shapes = list(
+    #   list(type = 'rect',
+    #        x0 = "2019-12-01", x1 = "2020-12-01",
+    #        y0 = min-2, y1 = max,
+    #        line = list(color = 'rgba(0, 0, 255, 0.5)', width = 2),
+    #        fillcolor = 'rgba(0, 0, 255, 0.2)')
+    # )
+    # annotations = list(
+    #   list(
+    #     x = "2020-06-01",
+    #     y = max + 2,
+    #     text = "COVID-19",
+    #     showarrow = FALSE,
+    #     font = list(color = 'black', size = 12)
+    #   )
+  # )
+)
+
+
+fig
+```
+
+### Convert to Time-Series Object
+
+```{r}
+library(lubridate)
+vocational_unemp <- unemp_df[unemp_df$education_level == "some_college_assoc",]
+###### Convert to Time Series Object ######
+ts_unemp <- ts(vocational_unemp$unemployment_rate, start = c(2019, 1), frequency = 12)
+
+```
+
+```{r}
+library(TSstudio)
+library(zoo) 
+ts_lags(ts_unemp)
+```
+
+Overall, the lag plots do not show strong linear relationships across the higher order lags. Lag 1 shows the strongest upward pattern, however, it is not clearly linear. This suggests that this month's unemployment rate for vocational grads is moderately correlated with last month's unemployment rate. Lags 2 and 3 also show positive sloping patterns. However, after Lag 4, the plots begin to appear random.
+
+This pattern indicates mild autocorrelation at short lags. After lags 3-4, there is no long-term autocorrelation or seasonality. 
+
+```{r}
+library(forecast)
+ggAcf(ts_unemp, frequency=12)
+ggPacf(ts_unemp, frequency=12)
+```
+
+The ACF plot shows strong auto-correlation at initial lags, indicating that last month's unemployment rate is very predictive of this month's unemployment rate.  
+
+The ACF plot also shows that vocational graduates' unemployment rates are non-stationary, with values decaying slowly over time, rather than rapidly. This suggests that observations far in the past influence the current value. The PACF also indicates that current values depend heavily on the previous values, with a very large spike at lag 1.
+
+```{r}
+tseries::adf.test(ts_unemp)
+```
+
+The P-value obtained from the ADF test is greater than 0.05. Therefore, we do not have enough evidence to reject the null hypothesis at 5% significance level. This indicates the data is non-stationary, which aligns with the ADF and PACF plots we obtained.
+
+```{r}
+library(dplyr)
+library(tidyverse)
+dc = decompose(ts_unemp)
+
+df <- tibble(
+  date = as.Date(time(ts_unemp)),
+  data = dc$x,
+  trend = dc$trend,
+  seasonal = dc$seasonal,
+  remainder = dc$random
+)
+
+df %>%
+  pivot_longer(-date) %>%
+  ggplot(aes(date, value)) +
+  geom_line() +
+  facet_wrap(~name, scales = "free_y", ncol = 1) +
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
+  theme_minimal()
+```
+
+**Seasonal:**
+The seasonal component represents regular, repeating patterns throughout the year. While the plot appears to show a consistent yearly rise, followed by a dip, this pattern doesn't seem to represent true seasonality. The lag plots and ACF and PACF plots we generated earlier do not show seasonality. The seasonal pattern shown in the classical decomposition likely is visualizing the assumption of a yearly seasonal structure rather than true seasonality in the unemployment rate.
+
+**Trend:**
+The trend line represents the underlying pattern of unemployment over a longer period, excluding short-term fluctuations. The trend shows a rapid increase from 2019 to 2020, followed by the start of a steady decline in late 2020 that has continued through 2025. This very clearly shows the spike in unemployment as a result of COVID-19, and the economy's slow recovery over time.
+
+**Remainder:**
+The remainder component captures the random, unpredictable variations in the data not explained by the trend or seasonality. The remainder clearly shows the steep spike in vocational graduates' unemployment rate at the start of 2020 due to the COVID-19 pandemic. After 2020, the remainder values decreases and stabilizes, showing that the shocks caused by COVID-19 eventually diminished once the economy began to transition into recovery.
+
+```{r}
+library(patchwork)
+diff_1 <- diff(ts_unemp)
+
+diff_2 <- diff(ts_unemp, differences = 2)
+
+acf_plot_1 <- ggAcf(diff_1,50) +
+  ggtitle("ACF of First-Order Differenced Series") +
+  theme_minimal()
+
+acf_plot_2 <- ggAcf(diff_2,50) +
+  ggtitle("ACF of Second-Order Differenced Series") +
+  theme_minimal()
+
+acf_plot_1/acf_plot_2
+```
+
+The ACF and PACF plots of the first and second differenced series both suggest that the data only needs one round of differencing. In the first-order differenced ACF, the data appears near-stationary, with most auto-correlations within the confidence bands and fluctuating around a constant mean. The second-order differenced ACF has a very large negative lag-1 auto-correlation, which is a sign that the data is over-differenced.
+
+```{r}
+p1<-ggPacf(diff_1,50) +
+  ggtitle("PACF of First Differenced Series") +
+  theme_minimal()
+
+p2<-ggPacf(diff_2,50) +
+  ggtitle("PACF of Second Differenced Series") +
+  theme_minimal()
+
+p1/p2
 ```
