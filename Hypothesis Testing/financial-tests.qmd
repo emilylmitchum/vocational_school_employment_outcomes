@@ -220,8 +220,6 @@ plot <- plot_ly(roi_clean, x = ~year) %>%
 plot
 ```
 
-# Time Series Analysis Using Employment Population Ratio
-
 ```{r}
 
 emp_ratio_df$date <- as.Date(emp_ratio_df$date, "%Y-%m-%d")
@@ -270,6 +268,8 @@ fig <- fig |>
 fig
 
 ```
+
+## Time Series
 
 ```{r}
 unemp_df$date <- as.Date(unemp_df$date, "%Y-%m-%d")
@@ -339,7 +339,7 @@ ts_lags(ts_unemp)
 
 Overall, the lag plots do not show strong linear relationships across the higher order lags. Lag 1 shows the strongest upward pattern, however, it is not clearly linear. This suggests that this month's unemployment rate for vocational grads is moderately correlated with last month's unemployment rate. Lags 2 and 3 also show positive sloping patterns. However, after Lag 4, the plots begin to appear random.
 
-This pattern indicates mild autocorrelation at short lags. After lags 3-4, there is no long-term autocorrelation or seasonality. 
+This pattern indicates mild autocorrelation at short lags. After lags 3-4, there is no long-term autocorrelation or seasonality.
 
 ```{r}
 library(forecast)
@@ -347,7 +347,7 @@ ggAcf(ts_unemp, frequency=12)
 ggPacf(ts_unemp, frequency=12)
 ```
 
-The ACF plot shows strong auto-correlation at initial lags, indicating that last month's unemployment rate is very predictive of this month's unemployment rate.  
+The ACF plot shows strong auto-correlation at initial lags, indicating that last month's unemployment rate is very predictive of this month's unemployment rate.
 
 The ACF plot also shows that vocational graduates' unemployment rates are non-stationary, with values decaying slowly over time, rather than rapidly. This suggests that observations far in the past influence the current value. The PACF also indicates that current values depend heavily on the previous values, with a very large spike at lag 1.
 
@@ -379,14 +379,11 @@ df %>%
   theme_minimal()
 ```
 
-**Seasonal:**
-The seasonal component represents regular, repeating patterns throughout the year. While the plot appears to show a consistent yearly rise, followed by a dip, this pattern doesn't seem to represent true seasonality. The lag plots and ACF and PACF plots we generated earlier do not show seasonality. The seasonal pattern shown in the classical decomposition likely is visualizing the assumption of a yearly seasonal structure rather than true seasonality in the unemployment rate.
+**Seasonal:** The seasonal component represents regular, repeating patterns throughout the year. While the plot appears to show a consistent yearly rise, followed by a dip, this pattern doesn't seem to represent true seasonality. The lag plots and ACF and PACF plots we generated earlier do not show seasonality. The seasonal pattern shown in the classical decomposition likely is visualizing the assumption of a yearly seasonal structure rather than true seasonality in the unemployment rate.
 
-**Trend:**
-The trend line represents the underlying pattern of unemployment over a longer period, excluding short-term fluctuations. The trend shows a rapid increase from 2019 to 2020, followed by the start of a steady decline in late 2020 that has continued through 2025. This very clearly shows the spike in unemployment as a result of COVID-19, and the economy's slow recovery over time.
+**Trend:** The trend line represents the underlying pattern of unemployment over a longer period, excluding short-term fluctuations. The trend shows a rapid increase from 2019 to 2020, followed by the start of a steady decline in late 2020 that has continued through 2025. This very clearly shows the spike in unemployment as a result of COVID-19, and the economy's slow recovery over time.
 
-**Remainder:**
-The remainder component captures the random, unpredictable variations in the data not explained by the trend or seasonality. The remainder clearly shows the steep spike in vocational graduates' unemployment rate at the start of 2020 due to the COVID-19 pandemic. After 2020, the remainder values decreases and stabilizes, showing that the shocks caused by COVID-19 eventually diminished once the economy began to transition into recovery.
+**Remainder:** The remainder component captures the random, unpredictable variations in the data not explained by the trend or seasonality. The remainder clearly shows the steep spike in vocational graduates' unemployment rate at the start of 2020 due to the COVID-19 pandemic. After 2020, the remainder values decreases and stabilizes, showing that the shocks caused by COVID-19 eventually diminished once the economy began to transition into recovery.
 
 ```{r}
 library(patchwork)
