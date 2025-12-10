@@ -250,7 +250,7 @@ add_trace(tuition_debt_enroll, #average debts line
                        type = 'scatter',
                        mode = 'lines+markers',
                        text = ~paste("Year: ", Year, "<br>", "Average Debt Amount: ", Average_debt_outstanding), hoverinfo = "text", textposition = "none", yaxis = "y2", opacity = 1) %>%
-layout(title = "Average Tuition and Debt vs. Enrollment from 2017 to 2025", #add plot title and axis 
+layout(title = "Average Tuition and Debt vs. Enrollment from 2019 to 2023", #add plot title and axis 
            barmode = "overlay",
           xaxis = list(title = "Year"),
           yaxis = list(title = "Debt (in thousands)", tickprefix = "$"),

@@ -10,6 +10,7 @@ toc: true
 ---
 
 ## Imports
+
 ```{r}
 library(astsa)
 library(stats)
@@ -26,12 +27,20 @@ library(tidyverse)
 ```
 
 ## Read in Data
+
 ```{r}
 unemp_df <- read.csv('/Users/Emi/Library/CloudStorage/GoogleDrive-emilymitchum265@gmail.com/Shared drives/DSAN/DSAN 5100/Final Project/vocational_school_employment_outcomes/Cleaned data/Cleaned_monthly_unemployment.csv')
 head(unemp_df)
 ```
 
+```{r}
+unemp_df <- read.csv('Cleaned data/Cleaned_monthly_unemployment.csv')
+```
+
 ## Create TS Object
+
+Spike in employment-population ratio for all education level in 2020. Steady increase starting 2023.
+
 ```{r}
 unemp_df$date <- as.Date(unemp_df$date, "%Y-%m-%d")
 unemp_df$unemployment_rate <- as.numeric(unemp_df$unemployment_rate)
@@ -92,22 +101,24 @@ ts_unemp <- ts(vocational_unemp$unemployment_rate, start = c(2019, 1), frequency
 ```
 
 ## Analyze Lag Plots
+
 ```{r}
 ts_lags(ts_unemp)
 ```
 
 Overall, the lag plots do not show strong linear relationships across the higher order lags. Lag 1 shows the strongest upward pattern, however, it is not clearly linear. This suggests that this month's unemployment rate for vocational grads is moderately correlated with last month's unemployment rate. Lags 2 and 3 also show positive sloping patterns. However, after Lag 4, the plots begin to appear random.
 
-This pattern indicates mild autocorrelation at short lags. After lags 3-4, there is no long-term autocorrelation or seasonality. 
+This pattern indicates mild autocorrelation at short lags. After lags 3-4, there is no long-term autocorrelation or seasonality.
 
 ## ACF and PACFs
+
 ```{r}
 library(forecast)
 ggAcf(ts_unemp, frequency=12)
 ggPacf(ts_unemp, frequency=12)
 ```
 
-The ACF plot shows strong auto-correlation at initial lags, indicating that last month's unemployment rate is very predictive of this month's unemployment rate.  
+The ACF plot shows strong auto-correlation at initial lags, indicating that last month's unemployment rate is very predictive of this month's unemployment rate.
 
 The ACF plot also shows that vocational graduates' unemployment rates are non-stationary, with values decaying slowly over time, rather than rapidly. This suggests that observations far in the past influence the current value. The PACF also indicates that current values depend heavily on the previous values, with a very large spike at lag 1.
 
@@ -137,16 +148,14 @@ df %>%
   theme_minimal()
 ```
 
-**Seasonal:**
-The seasonal component represents regular, repeating patterns throughout the year. While the plot appears to show a consistent yearly rise, followed by a dip, this pattern doesn't seem to represent true seasonality. The lag plots and ACF and PACF plots we generated earlier do not show seasonality. The seasonal pattern shown in the classical decomposition likely is visualizing the assumption of a yearly seasonal structure rather than true seasonality in the unemployment rate.
+**Seasonal:** The seasonal component represents regular, repeating patterns throughout the year. While the plot appears to show a consistent yearly rise, followed by a dip, this pattern doesn't seem to represent true seasonality. The lag plots and ACF and PACF plots we generated earlier do not show seasonality. The seasonal pattern shown in the classical decomposition likely is visualizing the assumption of a yearly seasonal structure rather than true seasonality in the unemployment rate.
 
-**Trend:**
-The trend line represents the underlying pattern of unemployment over a longer period, excluding short-term fluctuations. The trend shows a rapid increase from 2019 to 2020, followed by the start of a steady decline in late 2020 that has continued through 2025. This very clearly shows the spike in unemployment as a result of COVID-19, and the economy's slow recovery over time.
+**Trend:** The trend line represents the underlying pattern of unemployment over a longer period, excluding short-term fluctuations. The trend shows a rapid increase from 2019 to 2020, followed by the start of a steady decline in late 2020 that has continued through 2025. This very clearly shows the spike in unemployment as a result of COVID-19, and the economy's slow recovery over time.
 
-**Remainder:**
-The remainder component captures the random, unpredictable variations in the data not explained by the trend or seasonality. The remainder clearly shows the steep spike in vocational graduates' unemployment rate at the start of 2020 due to the COVID-19 pandemic. After 2020, the remainder values decreases and stabilizes, showing that the shocks caused by COVID-19 eventually diminished once the economy began to transition into recovery.
+**Remainder:** The remainder component captures the random, unpredictable variations in the data not explained by the trend or seasonality. The remainder clearly shows the steep spike in vocational graduates' unemployment rate at the start of 2020 due to the COVID-19 pandemic. After 2020, the remainder values decreases and stabilizes, showing that the shocks caused by COVID-19 eventually diminished once the economy began to transition into recovery.
 
 ## Decomposition
+
 ```{r}
 diff_1 <- diff(ts_unemp)
 
@@ -178,6 +187,8 @@ p1/p2
 ```
 
 The first order differenced PACF tells a similar story, with a most partial correlations falling within the confidence bounds and no signs of trend or seasonality. The second order differenced PACF again shows a very large negative value for lag 1, and a pattern of negative partial correlations. This likely means the second-order difference has introduced more complexity than necessary for this data.
+
+## Full Model Diagnostics
 
 ```{r}
 library(knitr)
@@ -222,6 +233,7 @@ auto.arima(ts_unemp)
 ```
 
 ```{r}
+#model diagnostic for ARIMA(0,1,0)
 set.seed(2025)
 
 first_model_output <- capture.output(sarima(ts_unemp, 0, 1, 0))
@@ -237,3 +249,116 @@ cat(first_model_output[first_start_line:first_end_line], sep = "\n")
 ***ARIMA(0, 1, 0) Interpretation***
 
 The Residual Plot doesn’t show perfect fluctuation around zero. There is a large outlier spike after 2020, showing the onset of COVID-19.
+
+auto arima: sigma\^2 = 2.014: log likelihood = -141.51 AIC=285.03 AICc=285.08 BIC=287.41
+
+Based on the results of the auto.arima(), it indicated ARIMA(0,1,0) model.
+
+The following are interpretations of the subplots of the model diagnostic for ARIMA(0,1,0):
+
+The Standardized Residuals plot showed a high spike between 2020 and 2021, and rather consistent fluctuations around zero after 2021. Meaning the residuals were nearly stationary with constant. mean and finite variance over time after 2021. There was more varied fluctuations pre-2021.
+
+The Autocorrelation Function (ACF) of the residuals did not show significant autocorrelations throughout lags 1 to 4 due to the autocorrelations being within bound of the 95% confidence interval (blue dashed line).
+
+The Q-Q plot showed that the residuals had a rough normal distribution, with minor deviations at the tails of both ends.
+
+The Ljung-Box Statistic plot p-values were not below the 0.05 significance level for all lags. Which meant there were no significant autocorrelations left in the residuals and concluded that model improvements may be needed.
+
+Coefficient significance: The ARIMA(0,1,0) model coefficients was not significant because the p-value = 0.9937. The p-value was above the 0.05 significance level.
+
+Coefficients: Estimate SE t.value p.value constant -0.0013 0.1587 -0.0079 0.9937
+
+sigma\^2 estimated as 2.013623 on 79 degrees of freedom
+
+AIC = 3.587813 AICc = 3.588454 BIC = 3.647364
+
+```{r}
+#model diagnostic for ARIMA(1,1,1)
+set.seed(2025)
+second_model_output <- capture.output(sarima(ts_unemp, 1,1,1))
+```
+
+```{r}
+#coefficient significance for ARIMA(1,1,1)
+second_start_line <- grep("Coefficients", second_model_output)
+second_end_line <- length(second_model_output)
+
+cat(second_model_output[second_start_line:second_end_line], sep = "\n")
+```
+
+**ARIMA(1,1,1) Interpretation**
+
+The ARIMA(1,1,1) model has the lowest AIC and AICc values compared to the ARIMA(0,1,0) model.
+
+The following are interpretations of the subplots of the model diagnostic for ARIMA(1,1,1) second difference:
+
+The Standardized Residuals plot also showed a high spike between 2020 and 2021, and rather consistent fluctuations around zero after 2021. Meaning the residuals were nearly stationary with constant mean and finite variance over time after 2021.
+
+The Autocorrelation Function (ACF) of the residuals also did not show significant autocorrelations throughout all the lags due to the autocorrelations being within bound of the 95% confidence interval.
+
+The Q-Q plot showed that the residuals had a normal distribution, with minor deviations at the tails of both ends.
+
+The Ljung-Box Statistic plot p-values were not below the 0.05 significance level for all lags. Which meant there were no significant autocorrelations left in the residuals.
+
+Coefficient significance: The ARIMA(1,1,1) model coefficients was not significant because the p-values were above the 0.05 significance level.
+
+Coefficients: Estimate SE t.value p.value ar1 0.8012 0.0713 11.2295 0.0000 ma1 -1.0000 0.0354 -28.2778 0.0000 constant -0.0240 0.0280 -0.8561 0.3946
+
+sigma\^2 estimated as 1.805778 on 77 degrees of freedom
+
+AIC = 3.557434 AICc = 3.561381 BIC = 3.676535
+
+## Benchmark Methods
+
+```{r}
+#benchmark methods for unemployment for AIMRA(0,1,0)
+#get RMSE and MAE 
+fit1 <- Arima(ts_unemp, order = c(0,1,0), include.drift=FALSE)
+summary(fit1) #view model summary
+```
+
+```{r}
+#benchmark methods for ARIMA(1,1,1) 
+fit2 <- Arima(ts_unemp, order = c(1,1,1), include.drift=FALSE)
+summary(fit2) #view model summary
+```
+
+Benchmark response:
+
+ARIMA(0,1,0) model: RMSE = 1.410236 and MAE = 0.4481914
+
+ARIMA(1,1,1) model: RMSE = 1.341794 and MAE = 0.4201441
+
+ARIMA(1,1,1) model had the lower root mean squared error (RMSE) and mean absolute error (MAE). Which implied a more accurate model because the smaller the RMSE and MAE values, the closer predictions are to actual values. Overall, the ARIMA(1,1,1) model performed better.
+
+## Forecast
+
+```{r}
+#forecast best model ARIMA(1,1,1) for next 365 days 
+forecast_result <- forecast(fit2, h=365)
+accuracy(forecast_result)
+
+#plot the forecast of ARIMA(1,1,1,) model 
+autoplot(forecast_result) +
+    labs(title = "ARIMA(1,1,1,) Forecast",
+        x = "Date", y = "Predicted Values") +
+    theme_minimal()
+
+```
+
+```{r}
+#forecast best model ARIMA(0,1,0) for next 365 days 
+# forecast_result2 <- forecast(fit1, h=365)
+# accuracy(forecast_result2)
+
+# #plot the forecast of ARIMA(0,1,0) model 
+# autoplot(forecast_result2) +
+#     labs(title = "ARIMA(0,1,0) Forecast",
+#         x = "Date", y = "Predicted Values") +
+#     theme_minimal()
+
+```
+
+In the forecast for ARIMA(1,1,1) model, the RMSE = 1.341794 and MAE = 0.4201441.
+
+The forecast plot showed the point forecast (solid blue line) that extends from the original unemployment data and into the future at a slight higher value, but converges to a stagnant line over time. The 80% ( darker shaded area) prediction intervals is rather wide for the forecast into the future. Which reflects the high degree of uncertainty in predicting values for unemployment rates further in time. The 95% (lighter shaded area) prediction interval also reflects a high degree of uncertainty in unemployment rate values in the future.
