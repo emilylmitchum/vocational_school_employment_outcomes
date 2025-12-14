@@ -347,7 +347,7 @@ data: joined_tuition_factor$Average_enroll[joined_tuition_factor$Average_tuition
 
 data: joined_tuition_factor$Average_enroll[joined_tuition_factor$Average_debt_factor == "High Debt"\] W = 0.67701, p-value = 0.0005107
 
-Shapiro shows less than 0.05, indicating no deviation from normality. Normality assumptions satisfied for all groups.
+Shapiro shows less than 0.05, indicating no deviation from normality. Normality assumptions not satisfied for all groups.
 
 ```{r}
 #homogeneity of variance - Levene's test 
@@ -495,6 +495,8 @@ htmlwidgets::saveWidget(loan_enroll_fig , "EDA and Visuals/Loans_enrollment_plot
 #transform loan amount into factors: low and high loan to fit into model 
 joined_loan_enroll_factor <- loan_enroll_trade_college_join
 
+
+
 joined_loan_enroll_factor$Average_loan_factor <- ifelse(joined_loan_enroll_factor$Average_loan_outstanding < mean(joined_loan_enroll_factor$Average_loan_outstanding), "Low Loan Amount", "High Loan Amount")
 
 #transform number of loans into factors: low and high loan count 
@@ -512,7 +514,8 @@ joined_loan_enroll_factor$Average_loan_number_factor <- as.factor(joined_loan_en
 
 ```{r}
 #create boxplot of loans and enrollment
-ggplot(joined_loan_enroll_factor, aes(x= Average_loan_outstanding, y = Average_enroll , fill = Average_loan_recipients)) + 
+#ggplot(joined_loan_enroll_factor, aes(x= Average_loan_outstanding, y = Average_enroll , fill = Average_loan_recipients)) + 
+ggplot(joined_loan_enroll_factor, aes(x= Average_loan_factor, y = Average_enroll , fill = Average_loan_number_factor)) + 
 geom_boxplot() +
 labs(title = "Distribution of Loans and Enrollment",
     x = "Loan Amount",
@@ -539,44 +542,45 @@ ggsave("EDA and Visuals/Loan_enroll_boxplot.png")
 ```{r}
 #check assumptions for ANOVA normality and homogeneity of variance on trade school enroll subset
 #shapiro-wilk test for each group 
-shapiro.test(joined_loan_enroll_factor$Average_enroll[joined_loan_enroll_factor$Average_loan_outstanding == "Low Loan Amount"])
+shapiro.test(joined_loan_enroll_factor$Average_enroll[joined_loan_enroll_factor$Average_loan_factor == "Low Loan Amount"])
 
-shapiro.test(joined_loan_enroll_factor$Average_enroll[joined_loan_enroll_factor$Average_loan_outstanding == "High Loan Amount"])
+shapiro.test(joined_loan_enroll_factor$Average_enroll[joined_loan_enroll_factor$Average_loan_factor == "High Loan Amount"])
 
-shapiro.test(joined_loan_enroll_factor$Average_enroll[joined_loan_enroll_factor$Average_loan_recipients == "Low Loan Count"])
+shapiro.test(joined_loan_enroll_factor$Average_enroll[joined_loan_enroll_factor$Average_loan_number_factor == "Low Loan Count"])
 
-shapiro.test(joined_loan_enroll_factor$Average_enroll[joined_loan_enroll_factor$Average_loan_recipients == "High Loan Count"])
+shapiro.test(joined_loan_enroll_factor$Average_enroll[joined_loan_enroll_factor$Average_loan_number_factor == "High Loan Count"])
 ```
 
-data: joined_loan_enroll_factor$Average_enroll[joined_loan_enroll_factor$Average_loan_outstanding == "Low Loan Amount"\] W = 0.78708, p-value = 0.08099
+data: joined_loan_enroll_factor$Average_enroll[joined_loan_enroll_factor$Average_loan_factor == "Low Loan Amount"\] shapiro.test(joined_loan_enroll_factor\$Average_enrW = 0.78708, p-value = 0.08099
 
-data: joined_loan_enroll_factor$Average_enroll[joined_loan_enroll_factor$Average_loan_outstanding == "High Loan Amount"\] W = 0.72916, p-value = 0.01236
+data: joined_loan_enroll_factor$Average_enroll[joined_loan_enroll_factor$Average_loan_factor == "High Loan Amount"\] W = 0.72916, p-value = 0.01236
 
-data: joined_loan_enroll_factor$Average_enroll[joined_loan_enroll_factor$Average_loan_recipients == "Low Loan Count"\] W = 0.78708, p-value = 0.08099
+data: joined_loan_enroll_factor$Average_enroll[joined_loan_enroll_factor$Average_loan_number_factor == "Low Loan Count"\] W = 0.78708, p-value = 0.08099
 
-data: joined_loan_enroll_factor$Average_enroll[joined_loan_enroll_factor$Average_loan_recipients == "High Loan Count"\] W = 0.72916, p-value = 0.01236
+data: joined_loan_enroll_factor$Average_enroll[joined_loan_enroll_factor$Average_loan_number_factor == "High Loan Count"\] W = 0.72916, p-value = 0.01236
 
-Shapiro shows greater than 0.05 for low loan amount and low loan count, indicating there is deviation from normality. Normality assumptions not satisfied for all groups.
+Shapiro shows some p-values greater than 0.05, indicating deviation from normality. Normality assumptions satisfied for some groups like the low level number of loan recipients and low loan amount.
 
 ```{r}
 #homogeneity of variance - Levene's test 
-leveneTest(Average_enroll ~ Average_loan_outstanding, data = joined_loan_enroll_factor)
+leveneTest(Average_enroll ~ Average_loan_factor, data = joined_loan_enroll_factor)
 
-leveneTest(Average_enroll ~ Average_loan_recipients, data = joined_loan_enroll_factor)
+leveneTest(Average_enroll ~ Average_loan_number_factor, data = joined_loan_enroll_factor)
 ```
 
-leveneTest(Average_enroll \~ Average_loan_recipientLevene's Test for Homogeneity of Variance (center = median) Df F value Pr(\>F) group 1 0.0174 0.8982 8\
-s, data = joined_loan_enroll_factor)
+Levene's Test for Homogeneity of Variance (center = median) Df F value Pr(\>F) group 1 0.0174 0.8982 8
 
-> leveneTest(Average_enroll \~ Average_loan_recipients, data = joined_loan_enroll_factor) Levene's Test for Homogeneity of Variance (center = median) Df F value Pr(\>F) group 1 0.0174 0.8982 8
+Levene's Test for Homogeneity of Variance (center = median) Df F value Pr(\>F) group 1 0.0174 0.8982 8
 
 Levene's test greater than 0.05 p-value. Fail to reject null hypothesis of equal variance. No evidence of unequal variances across the four groups of loan amounts and number of loan levels. Variability in enrollment appear to be similar for all combinations of loan amount and number of loans, so equal-variance assumptions for ANOVA is satisfied.
 
 ```{r}
 #two way anova 
-loan_enroll_fit <- aov(Average_enroll ~ Average_loan_outstanding + Average_loan_recipients + (Average_loan_outstanding * Average_loan_recipients), data = joined_loan_enroll_factor)
+loan_enroll_fit <- aov(Average_enroll ~ Average_loan_factor * Average_loan_number_facto, data = joined_loan_enroll_factor)
 summary(loan_enroll_fit)
 ```
+
+Df Sum Sq Mean Sq F value Pr(\>F) Average_loan_factor 1 8.623e+07 8.623e+07 0.023 0.884 Residuals 8 3.056e+10 3.820e+09
 
 Average_loan_outstanding 1 1.214e+08 1.214e+08 0.024 Average_loan_recipients 1 1.956e+07 1.956e+07 0.004 Average_loan_outstanding:Average_loan_recipients 1 4.100e+07 4.100e+07 0.008 Residuals 6 3.047e+10 5.078e+09\
 Pr(\>F) Average_loan_outstanding 0.882 Average_loan_recipients 0.953 Average_loan_outstanding:Average_loan_recipients 0.931
@@ -717,9 +721,9 @@ debt_enroll_map_fig <- plot_ly() |>
     mode = "text",
     lon = ~lon_plot,
     lat = ~lat_plot,
-    #text = ~paste0(round(percent_trade_school), "%"),
+    text = ~paste0(round(percent_trade_school), "%"),
     #text = ~paste0(round(Avg_Debt_Amount)),
-    #textfont = list(size = 11, color = "black"),
+    textfont = list(size = 11, color = "black"),
     hoverinfo = "none",
     showlegend = FALSE
   ) |>
@@ -744,3 +748,51 @@ debt_enroll_map_fig
 htmlwidgets::saveWidget(debt_enroll_map_fig, "EDA and Visuals/Complete Visuals/Debt_enroll_heatmap.html", selfcontained=TRUE)
 
 ```
+
+```{r}
+#summarize debt enrollment map by states 
+enrollment_debt_map2 <- enrollment_debt_map %>%
+    group_by(state) %>%
+    summarize(Avg_percent_trade_school = mean(percent_trade_school),
+             Avg_debt_amount = mean(Total_Debt_Amount))
+
+#create factor for average debt amount 
+enrollment_debt_map2$Avg_debt_amount_factor <- ifelse(enrollment_debt_map2$Avg_debt_amount < mean(enrollment_debt_map2$Avg_debt_amount), "Low debt amount", "High debt amount")
+
+```
+
+```{r}
+#create boxplot 
+ggplot(enrollment_debt_map2, aes(x= Avg_debt_amount_factor, y = Avg_percent_trade_school)) + 
+geom_boxplot() +
+labs(title = "Distribution of Debts and Enrollments",
+    x = "Debt Amount",
+    y = "Enrollment")
+
+#save boxplot 
+ggsave("EDA and Visuals/debt_enroll_map_boxplot.png")
+```
+
+```{r}
+#make sure debt factor is factor 
+enrollment_debt_map2$Avg_debt_amount_factor <- as.factor(enrollment_debt_map2$Avg_debt_amount_factor)
+enrollment_debt_map2$state <- as.factor(enrollment_debt_map2$state)
+
+#shapiro wilk tests 
+shapiro.test(enrollment_debt_map2$Avg_percent_trade_school[enrollment_debt_map2$Avg_debt_amount_factor == "Low debt amount"])
+
+shapiro.test(enrollment_debt_map2$Avg_percent_trade_school[enrollment_debt_map2$Avg_debt_amount_factor == "High debt amount"])
+
+#Levene's test 
+leveneTest(Avg_percent_trade_school ~ Avg_debt_amount_factor, data = enrollment_debt_map2)
+#leveneTest(Avg_percent_trade_school ~ state, data = enrollment_debt_map2)
+
+#statistical test of debt and enrollment by state 
+#one way anova 
+debt_enroll_state_fit <- aov(Avg_percent_trade_school ~ Avg_debt_amount_factor,data = enrollment_debt_map2)
+summary(debt_enroll_state_fit)
+```
+
+> summary(debt_enroll_state_fit) Df Sum Sq Mean Sq F value Pr(\>F) Avg_debt_amount_factor 1 329 328.7 1.41 0.241 Residuals 48 11193 233.2
+
+One- way anova: p-value not significant. Failed to reject null hypothesis
