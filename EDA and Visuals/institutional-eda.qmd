@@ -1,0 +1,915 @@
+---
+title: "institutional-eda"
+author: "Varshini Chellapilla"
+format:
+  html: 
+    embed-resources: true
+    code-fold: true
+editor: visual
+toc: true
+---
+
+# Load Datasets & Packages
+
+```{r}
+
+# Load packages
+library(dplyr)
+library(tidyverse)
+library(plotly)
+library(rjson)
+
+```
+
+```{r}
+
+# Load cleaned datasets
+directory <- read.csv("../Cleaned data/cleaned_directory_information.csv", check.names = FALSE)
+cost <- read.csv("../Cleaned data/cost-of-attendance.csv", check.names = FALSE)
+grad_rates <- read.csv("../Cleaned data/graduation-rates.csv", check.names = FALSE)
+
+majors <- read.csv("../Cleaned data/majors.csv", check.names = FALSE)
+majors_state <- read.csv("../Cleaned data/majors_by_state.csv", check.names = FALSE)
+
+layoffs <- read.csv("../Cleaned data/cleaned_job_layoffs.csv", check.names = FALSE)
+layoffs_sector <- read.csv("../Cleaned data/cleaned_job_layoffs_by_sector.csv", check.names = FALSE)
+
+openings <- read.csv("../Cleaned data/cleaned_job_openings.csv", check.names = FALSE)
+openings_sector <- read.csv("../Cleaned data/cleaned_job_openings_by_sector.csv", check.names = FALSE)
+
+separations <- read.csv("../Cleaned data/cleaned_job_total_separations.csv", check.names = FALSE)
+separations_sector <- read.csv("../Cleaned data/cleaned_job_total_separations_by_sector.csv", check.names = FALSE)
+
+unemployment <- read.csv("../Cleaned data/Cleaned_monthly_unemployment.csv", check.names = FALSE)
+
+demo <- read.csv("../Cleaned data/Cleaned_ipeds_state_demographics.csv", check.names = FALSE)
+
+overall_voc <- read.csv("../data/vocational_school_enrollment_years.csv", check.names = FALSE)
+
+```
+
+```{r}
+
+directory <- setNames(directory, gsub(" ", "_", names(directory)))
+cost <- setNames(cost, gsub(" ", "_", names(cost)))
+grad_rates <- setNames(grad_rates, gsub(" ", "_", names(grad_rates)))
+
+majors <- setNames(majors, gsub(" ", "_", names(majors)))
+majors_state <- setNames(majors_state, gsub(" ", "_", names(majors_state)))
+
+layoffs <- setNames(layoffs, gsub(" ", "_", names(layoffs)))
+layoffs_sector <- setNames(layoffs_sector, gsub(" ", "_", names(layoffs_sector)))
+
+openings <- setNames(openings, gsub(" ", "_", names(openings)))
+openings_sector <- setNames(openings_sector, gsub(" ", "_", names(openings_sector)))
+
+separations <- setNames(separations, gsub(" ", "_", names(separations)))
+separations_sector <- setNames(separations, gsub(" ", "_", names(separations_sector)))
+
+unemployment <- setNames(unemployment, gsub(" ", "_", names(unemployment)))
+
+demo <- setNames(demo, gsub(" ", "_", names(demo)))
+
+overall_voc <- setNames(overall_voc, gsub(" ", "_", names(overall_voc)))
+
+```
+
+```{r}
+
+# Preview cleaned datasets
+head(directory)
+head(cost)
+head(grad_rates)
+
+head(majors)
+head(majors_state)
+
+head(layoffs)
+head(layoffs_sector)
+
+head(openings)
+head(openings_sector)
+
+head(separations)
+head(separations_sector)
+
+head(unemployment)
+
+head(demo)
+
+head(overall_voc)
+
+```
+
+# Question 1: Yearly Enrollment Numbers for Vocational Schools
+
+``` {r}
+
+# Data Cleaning
+overall_voc <- overall_voc %>% 
+  filter(!row_number() %in% 1)
+
+colnames(overall_voc) <- overall_voc[1, ]
+
+overall_voc <- overall_voc %>% 
+  filter(!row_number() %in% 1)
+
+overall_voc <- setNames(overall_voc, gsub(" ", "_", names(overall_voc)))
+
+overall_voc <- cbind(row_index = rownames(overall_voc), overall_voc)
+rownames(overall_voc) <- NULL
+
+colnames(overall_voc) <- c("year", "number_of_students")
+
+N <- 5
+overall_voc <- overall_voc[-((nrow(overall_voc) - N + 1):nrow(overall_voc)), ]
+
+overall_voc$number_of_students <- as.numeric(gsub(",", "", overall_voc$number_of_students))
+
+```
+
+``` {r}
+
+# Plot
+
+enroll_line <- plot_ly(data = overall_voc, x = ~year, y = ~number_of_students, type = "scatter", mode = "lines+markers") %>%
+  layout(title = "Number of Students Enrolled in Vocational Schools by Year (2001-2024)", xaxis = list(title = "Years"), yaxis = list(title = "Number of Students"))
+
+enroll_line
+
+```
+
+
+# Question 1: Rates of Graduation & Enrollment Counts for Vocational Programs vs. Undergraduate Programs Across States
+
+```{r}
+
+head(grad_rates)
+head(demo)
+
+```
+
+```{r}
+
+# Create undergrad_demo and vocational_demo datasets for enrollment totals for each category of analysis
+# Each institution can show up a max number of 5 times (2020-2024)
+undergrad_demo <- demo %>% 
+  filter(trade_school_check == "False") %>% 
+  filter(Undergraduate_or_graduate_level_of_student == "Undergraduate") %>%
+  group_by(unitid, state, state_fips_code, year) %>%
+  rename(enrollment_grand_total = Grand_total) %>% 
+  summarise(enrollment_grand_total = sum(enrollment_grand_total, na.rm = TRUE),
+            .groups = "drop")
+
+vocational_demo <- demo %>% 
+  filter(trade_school_check == "True") %>%
+  group_by(unitid, state, state_fips_code, year) %>%
+  rename(enrollment_grand_total = Grand_total) %>% 
+  summarise(enrollment_grand_total = sum(enrollment_grand_total, na.rm = TRUE),
+            .groups = "drop")
+
+# Clean grad_rates columns
+colnames(grad_rates) <- gsub("\\n", "", colnames(grad_rates))
+
+# Narrow down grad_rates dataset 
+# Each institution can show up a max number of 5 times (2020-2024)
+filtered_grad_rates <- grad_rates %>% 
+  filter(!publication_yr %in% c(2018, 2019)) %>%
+  group_by(Unique_identification_number_of_the_institution, publication_yr) %>%
+  summarise(total_grads = sum(Grand_total, na.rm = TRUE), .groups = "drop")
+  
+
+# Join the two datasets
+undergrad_grad_rates <- inner_join(undergrad_demo, filtered_grad_rates, by = c("unitid" = "Unique_identification_number_of_the_institution", "year" = "publication_yr"))
+vocational_grad_rates <- inner_join(vocational_demo, filtered_grad_rates, by = c("unitid" = "Unique_identification_number_of_the_institution", "year" = "publication_yr"))
+
+```
+
+```{r}
+
+# Edit datasets as needed
+undergrad_grad_by_year <- undergrad_grad_rates %>%
+  mutate(program_type = "Undergraduate") %>%
+  mutate(across(year, as.factor)) %>%
+  group_by (year) %>% 
+  summarise(
+    enrollment = sum(enrollment_grand_total, na.rm = TRUE),
+    graduates = sum(total_grads, na.rm = TRUE)
+  )
+
+vocational_grad_by_year <- vocational_grad_rates %>%
+  mutate(program_type = "Vocational") %>%
+  mutate(across(year, as.factor)) %>%
+  group_by (year) %>% 
+  summarise(
+    enrollment = sum(enrollment_grand_total, na.rm = TRUE),
+    graduates = sum(total_grads, na.rm = TRUE)
+  )
+
+```
+
+```{r}
+# Visualize subplots
+fig1 <- plot_ly(data = undergrad_grad_by_year, x = ~year, y = ~enrollment, name = "Total Undergraduate Students Enrolled", type = "bar", text = ~enrollment, textposition = "auto", color = I("blue")) %>%
+  add_trace(data = undergrad_grad_by_year, x = ~year, y = ~graduates, name = "Total Undergraduate Students Graduated", type = "bar", text = ~graduates, textposition = "auto", color = I("green")) %>%
+  add_lines(x = ~year, y = ~enrollment, line = list(dash = "solid", width = 1.5, color = "black"), showlegend = FALSE, name = NULL) %>%
+  add_lines(x = ~year, y = ~graduates, line = list(dash = "dash", width = 1.5, color = "black"), showlegend = FALSE, name = NULL) %>%
+  layout(barmode = "group", bargap = 0.2, bargroupgap = 0.15, automargin = TRUE,
+         #title = "Number of Undergraduate Students Enrolled vs. Graduated by Year", 
+         xaxis = list(title = "Years", standoff = 40), 
+         yaxis = list (title = "Number of Students"), 
+         legend = list(orientation = 'w')
+         )
+
+fig2 <- plot_ly(data = vocational_grad_by_year, x = ~year, y = ~enrollment, name = "Total Vocational Students Enrolled", type = "bar", text = ~enrollment, textposition = "auto", color = I("blue")) %>%
+  add_trace(data = vocational_grad_by_year, x = ~year, y = ~graduates, name = "Total Vocational Students Graduated", type = "bar", text = ~graduates, textposition = "auto", color = I("green")) %>% 
+  add_lines(x = ~year, y = ~enrollment, line = list(dash = "solid", width = 1.5, color = "black"), showlegend = FALSE, name = NULL) %>%
+  add_lines(x = ~year, y = ~graduates, line = list(dash = "dash", width = 1.5, color = "black"), showlegend = FALSE, name = NULL) %>%
+  layout(barmode = "group", bargap = 0.2, bargroupgap = 0.15, automargin = TRUE,
+         #title = "Number of Vocational Students Enrolled vs. Graduated by Year", 
+         xaxis = list(title = "Years", standoff = 40), 
+         yaxis = list (title = "Number of Students"), 
+         legend = list(orientation = 'h')
+         )
+
+fig <- subplot(fig1, fig2, shareY = TRUE, titleX = FALSE, titleY = TRUE) %>% 
+  layout(title = "Number of Students Enrolled and Graduated Across Undergraduate and Vocational Programs", 
+         annotations = list(
+    # Subplot Title #1
+    list(
+      x = 0.20, y = 1.02, text = "Undergraduate", showarrow = FALSE, 
+      xref='paper', yref='paper',
+      xanchor = 'center', yanchor = 'top', font = list(size = 14)
+    ),
+    # Subplot Title #1
+    list(
+      x = 0.80, y = 1.02, text = "Vocational", showarrow = FALSE, 
+      xref='paper', yref='paper',
+      xanchor = 'center', yanchor = 'top', font = list(size = 14)
+    ),
+    # X-Axis Title
+    list(
+        x = 0.5, y = -0.05, text = "Years", showarrow = FALSE,
+        xref = 'paper', yref = 'paper',
+        xanchor = 'center', yanchor = 'top', font = list(size = 14)
+      )
+         )
+  )
+
+fig
+
+
+```
+### Question 2: Graduation Rates & Costs of Attendance relationship
+
+
+``` {r}
+
+# looking at relationship between cost of attendance and graduation rates between vocational and undergraduate programs
+
+head(grad_rates)
+head(cost)
+
+# create subset of cost with only avg cost per institution
+cost_subset <- cost %>%
+  mutate(across(
+    starts_with("Tuition_and_fees,_"),
+    ~ as.numeric(gsub("[^0-9.]", "", .))
+  )) %>%
+  rowwise() %>%
+  mutate(avg_tuition_and_fees = mean(c_across(starts_with("Tuition_and_fees,_")), na.rm = TRUE)) %>%
+  ungroup() %>%
+  group_by(Unique_identification_number_of_the_institution) %>%
+  summarise(avg_tuition_and_fees = mean(avg_tuition_and_fees, na.rm = TRUE))
+
+# from demo bring in the trade_school_check column
+cost_subset <- cost_subset %>%
+  left_join(demo %>% select(unitid, trade_school_check), by = c("Unique_identification_number_of_the_institution" = "unitid"))
+
+cost_subset <- cost_subset %>% 
+  select(Unique_identification_number_of_the_institution, trade_school_check, avg_tuition_and_fees) %>%
+  distinct(Unique_identification_number_of_the_institution, avg_tuition_and_fees, .keep_all = TRUE)
+
+# for grad_rates, join with demo to get trade_school_check
+# keep grand_total
+demo_unique <- demo %>%
+  select(unitid, trade_school_check) %>%
+  distinct(unitid, .keep_all = TRUE)
+
+grad_rates_subset <- grad_rates %>% 
+  left_join(demo_unique %>% select(unitid, trade_school_check), by = c("Unique_identification_number_of_the_institution" = "unitid"))
+
+grad_rates_subset <- grad_rates_subset %>% 
+  filter(Graduation_rate_status_in_cohort == "Completers within 150% of normal time") %>%
+  select(Unique_identification_number_of_the_institution, Graduation_rate_status_in_cohort, trade_school_check, Grand_total) %>%
+  group_by(Unique_identification_number_of_the_institution, trade_school_check) %>%
+  summarise(grand_graduates_total = sum(Grand_total, na.rm = TRUE))
+  
+
+# merge the two datasets together
+grad_rates_costs <- cost_subset %>%
+  inner_join(grad_rates_subset %>% select(Unique_identification_number_of_the_institution, grand_graduates_total), by = "Unique_identification_number_of_the_institution")
+
+```
+``` {r}
+
+# use boot library for easy bootstrapping
+library(boot)
+
+# set seed and N parameter
+set.seed(343)
+N <- 10000
+
+# split grad_rates_cost into: undergrad and vocational
+ug_grad_cost <- subset(grad_rates_costs, trade_school_check == "False")
+  
+voc_grad_cost <- subset(grad_rates_costs, trade_school_check == "True")
+
+# need to define a bootstrap spearman function
+spearman_boot <- function(df, indices) {
+  d <- df[indices, ]
+  cor(d$grand_graduates_total, d$avg_tuition_and_fees, method = "spearman")
+}
+
+# do bootstrapping
+ug_boot <- boot(ug_grad_cost, spearman_boot, R = N)
+voc_boot <- boot(voc_grad_cost, spearman_boot, R = N)
+
+# get CIs
+boot.ci(ug_boot,  type = "perc")
+boot.ci(voc_boot, type = "perc")
+
+
+```
+
+### Question 3: Vocational School Enrollment by Geographic Area Type
+
+```{r}
+
+head(directory)
+head(demo)
+```
+
+```{r}
+
+# Remove parentheses from colnames in directory
+colnames(directory) <- gsub("\\n", "", colnames(directory))
+colnames(directory) <- gsub("[()]", "", colnames(directory))
+colnames(directory) <- gsub("-", "_", colnames(directory))
+
+
+# degree_of_urbanization_urban_centric_locale change to dictionary values
+locale <- c("11" = "Large City", "12" = "Midsize City", "13" = "Small City",
+               "21" = "Large Suburb", "22" = "Midsize Suburb", "23" = "Small Suburb", 
+               "31" = "Fringe Town", "32" = "Distant Town", "33" = "Remote Town", 
+               "41" = "Fringe Rural", "42" = "Distant Rural", "43" = "Remote Rural",
+            "-3" = "Not available"
+               )
+
+
+# Filter "directory" down to the info we need
+undergrad_geo_directory <- directory %>% 
+  mutate(trade_school_check = 
+           Highest_level_of_offering %in% c("Postsecondary award, certificate or diploma of less than one academic year", 
+                                            "Postsecondary award, certificate or diploma of at least two but less than four academic years",
+                                            "Postsecondary award, certificate or diploma of at least one but less than two academic years",
+                                            "Associate's degree")
+         ) %>%
+  filter(trade_school_check == FALSE) %>%
+  filter(!publication_yr %in% c(2018, 2019)) %>%
+  mutate(locale_name = recode(as.character(Degree_of_urbanization_Urban_centric_locale), !!!locale)) %>%
+  select(Unique_identification_number_of_the_institution, City_location_of_institution, State_abbreviation, ZIP_code, FIPS_state_code, Bureau_of_Economic_Analysis_BEA_regions, locale_name, publication_yr)
+
+vocational_geo_directory <- directory %>% 
+  mutate(trade_school_check = 
+           Highest_level_of_offering %in% c("Postsecondary award, certificate or diploma of less than one academic year", 
+                                            "Postsecondary award, certificate or diploma of at least two but less than four academic years",
+                                            "Postsecondary award, certificate or diploma of at least one but less than two academic years",
+                                            "Associate's degree")
+         ) %>%
+  filter(trade_school_check == TRUE) %>%
+  filter(!publication_yr %in% c(2018, 2019)) %>%
+  mutate(locale_name = recode(as.character(Degree_of_urbanization_Urban_centric_locale), !!!locale)) %>%
+  select(Unique_identification_number_of_the_institution, City_location_of_institution, State_abbreviation, ZIP_code, FIPS_state_code, Bureau_of_Economic_Analysis_BEA_regions, locale_name, publication_yr)
+
+
+# Join the datasets to the demo dataset
+undergrad_geo <- left_join(undergrad_geo_directory, undergrad_demo, by = c("Unique_identification_number_of_the_institution" = "unitid", "publication_yr" = "year"))
+vocational_geo <- left_join(vocational_geo_directory, vocational_demo, by = c("Unique_identification_number_of_the_institution" = "unitid", "publication_yr" = "year"))
+
+
+# Check nulls
+undergrad_geo %>% summarise_all(~ sum(is.na(.))) # 2095 in "state", "state_fips_code", "enrollment_grand_total"
+vocational_geo %>% summarise_all(~ sum(is.na(.))) # 693 in "state", "state_fips_code", "enrollment_grand_total"
+
+
+# Aggregate the above datasets to lowest level minus id
+filtered_undergrad_geo <- undergrad_geo %>% 
+  select(-Unique_identification_number_of_the_institution) %>%
+  group_by(City_location_of_institution, State_abbreviation, ZIP_code, FIPS_state_code, Bureau_of_Economic_Analysis_BEA_regions, locale_name, publication_yr, state, state_fips_code) %>%
+  summarise(enrollment = sum(enrollment_grand_total, na.rm = TRUE))
+
+filtered_vocational_geo <- vocational_geo %>% 
+  select(-Unique_identification_number_of_the_institution) %>%
+  group_by(City_location_of_institution, State_abbreviation, ZIP_code, FIPS_state_code, Bureau_of_Economic_Analysis_BEA_regions, locale_name, publication_yr, state, state_fips_code) %>%
+  summarise(enrollment = sum(enrollment_grand_total, na.rm = TRUE))
+
+```
+ BEA
+0 - US Service schools
+1 - New England CT ME MA NH RI VT
+2 - Mid East DE DC MD NJ NY PA
+3 - Great Lakes IL IN MI OH WI
+4 - Plains IA KS MN MO NE ND SD
+5 - Southeast AL AR FL GA KY LA MS NC SC TN VA WV
+6 - Southwest AZ NM OK TX
+7 - Rocky Mountains CO ID MT UT WY
+8 - Far West AK CA HI NV OR WA
+9 - Outlying areas AS FM GU MH MP PR PW VI
+
+
+```{r}
+
+# Visual: undergrad vs vocational | spread of enrollment numbers by location type | over the years 
+
+undergrad_locale <- filtered_undergrad_geo %>%
+  mutate(institution = "Undergrad") %>%
+  group_by(locale_name, publication_yr, institution) %>%
+  summarise(enrollment = sum(enrollment, na.rm = TRUE))
+
+vocational_locale <- filtered_vocational_geo %>%
+  mutate(institution = "Vocational") %>%
+  group_by(locale_name, publication_yr, institution) %>%
+  summarise(enrollment = sum(enrollment, na.rm = TRUE))
+
+# Join undergrad and vocational dataset
+locale_df <- bind_rows(undergrad_locale, vocational_locale)
+
+# Reorder local_df for "categoryorder" argument
+category_order <- locale_df %>%
+  filter(institution == "Vocational", publication_yr == min(publication_yr)) %>%
+  arrange(desc(enrollment)) %>%
+  pull(locale_name)
+
+# Plot visualization
+locale_fig <- plot_ly(data = locale_df, x = ~locale_name, y = ~enrollment, frame = ~publication_yr, type = "bar",
+                      color = ~institution, colors = c("orange", "darkgreen"), text = ~paste0(round(enrollment / 1000, 1), "k"), textposition = "outside") %>%
+  layout(barmode = "group", title = "Number of Students Enrolled by Geographical Area and Institution Type (Animated by Year)", 
+         xaxis = list(title = "Geographical Area Type", categoryorder = "array", categoryarray = category_order), yaxis = list(title = "Enrollment"), legend = list(orientation = "h")) %>%
+  animation_opts(frame = 1000, transition = 500)
+
+locale_fig
+
+# Export as interactive HTML
+htmlwidgets::saveWidget(locale_fig, "geo_area_and_enrollment_animation.html")
+
+```
+
+
+``` {r}
+
+undergrad_locale_a <- filtered_undergrad_geo %>%
+  mutate(institution = "Undergrad") %>%
+  group_by(locale_name, institution) %>%
+  summarise(enrollment = sum(enrollment, na.rm = TRUE))
+
+vocational_locale_a <- filtered_vocational_geo %>%
+  mutate(institution = "Vocational") %>%
+  group_by(locale_name, institution) %>%
+  summarise(enrollment = sum(enrollment, na.rm = TRUE))
+
+# Join undergrad and vocational dataset
+locale_df_a <- bind_rows(undergrad_locale_a, vocational_locale_a)
+
+locale_fig_a <- plot_ly(data = locale_df_a, x = ~locale_name, y = ~enrollment, type = "bar",
+                      color = ~institution, colors = c("orange", "darkgreen"), text = ~paste0(round(enrollment / 1000, 1), "k"), textposition = "outside") %>%
+  layout(barmode = "group", title = "Number of Students Enrolled by Geographical Area and Institution Type", 
+         xaxis = list(title = "Geographical Area Type", categoryorder = "array", categoryarray = category_order), yaxis = list(title = "Enrollment"), legend = list(orientation = "h"))
+
+locale_fig_a
+
+```
+
+
+``` {r}
+
+# boxplot of enrollment numbers by the different geographic area types
+box_enroll <- plot_ly(data = locale_df, x = ~locale_name, y = ~enrollment, type = "box",
+                      color = ~institution, colors = c("orange", "darkgreen"), text = ~paste0(round(enrollment / 1000, 1), "k"), textposition = "outside") %>%
+  layout(barmode = "group", title = "Number of Students Enrolled by Geographical Area and Institution Type", 
+         xaxis = list(title = "Geographical Area Type", categoryorder = "array", categoryarray = category_order), yaxis = list(title = "Enrollment"), legend = list(orientation = "h")) 
+
+box_enroll
+
+```
+
+
+``` {r}
+
+# now do a statistical test to see if they actually have any sort of a relationship for vocational schools
+# two-way anova
+
+# Box plot of mean enrollment by locale (mean over the years) 
+
+head(undergrad_locale)
+head(vocational_locale)
+
+# Null Hypothesis H0: There is no difference between the average enrollment numbers between the locales
+# Alternate Hypothesis H1: There is an affect on average enrollment numbers by the locale type
+
+locale_aov_model <- aov(enrollment ~ locale_name, data = vocational_locale)
+summary(locale_aov_model)
+
+# Find Residuals
+locale_res <- residuals(locale_aov_model)
+
+# Shapiro-Wilk Test
+shapiro.test(locale_res)
+# P-Value is 2e-16, which is less than 0.05 which means it fails normality.
+plot(locale_aov_model, which = 2)
+
+locale_res <- as.numeric(unlist(locale_res))
+
+qqnorm(locale_res)
+qqline(locale_res)
+
+library(car)
+vocational_locale$publication_yr <- as.factor(vocational_locale$publication_yr)
+leveneTest(enrollment ~ locale_name, data = vocational_locale)
+# Levene's Test P-Value is 0.004466 which is slightly less than 0.05. Which means that variances are not equal and we need to do a Welch's ANOVA instead of a one-way ANOVA. 
+
+# Welch's ANOVA
+oneway.test(enrollment ~ locale_name, data = vocational_locale, var.equal = FALSE)
+# P-Value < 2.2e-16
+# Thus, we can reject the null hypothesis and say that there is significant evidence that the locale of the institution does have an effect on the enrollment numbers. 
+
+# Games-Howell
+library(userfriendlyscience)
+posthocTGH(vocational_locale$locale_name, vocational_locale$enrollment)
+
+plot(locale_aov_model, which = 1)
+
+# Visualize using a boxplot
+
+
+```
+``` {r}
+
+is.matrix(locale_res)
+
+```
+
+
+# Question 4: (a) Job Openings/Layoffs & Number of Students Enrolled in Vocational Schools, (b) Predicting Enrollment numbers based on Job Openings/Layoffs
+
+``` {r}
+
+# Aggregate openings & layoffs dfs to yearly level; vertical cols too like 
+# Openings
+openings_yr <- openings_sector %>%
+  rowwise() %>%
+  mutate(openings = sum(c_across(Jan:Dec), na.rm = TRUE)) %>%
+  ungroup()
+
+# Layoffs
+layoffs_yr <- layoffs_sector %>%
+  rowwise() %>%
+  mutate(layoffs = sum(c_across(Jan:Dec), na.rm = TRUE)) %>%
+  ungroup()
+```
+
+
+``` {r}
+# Simple graph for openings and layoffs over time
+openings_yr$Year <- as.character(openings_yr$Year)
+openings_line <- plot_ly(data = openings_yr, x = ~Year, y = ~openings, type = "scatter", mode = "lines+markers", name = ~sector) %>%
+  layout(title = "Yearly Job Openings by Sector", 
+         xaxis = list(title = "Year"), yaxis = list(title = "Number of Job Openings"), legend = list(orientation = "w"))
+openings_line
+
+layoffs_yr$Year <- as.character(layoffs_yr$Year)
+layoffs_line <- plot_ly(data = layoffs_yr, x = ~Year, y = ~layoffs, type = "scatter", mode = "lines+markers", name = ~sector) %>%
+  layout(title = "Yearly Job Layoffs by Sector", 
+         xaxis = list(title = "Year"), yaxis = list(title = "Number of Job Layoffs"), legend = list(orientation = "w"))
+layoffs_line
+
+```
+
+
+``` {r}
+# Narrow down for further analysis
+# Openings
+openings_yr <- openings_yr %>%
+  select(sector, Year, openings) %>%
+  pivot_wider(names_from = Year, values_from = openings, names_prefix = "openings_")
+
+openings_yr <- openings_yr %>%
+  select(sector, openings_2020, openings_2021, openings_2022, openings_2023, openings_2024, openings_2025)
+
+# Layoffs
+layoffs_yr <- layoffs_yr %>%
+  select(sector, Year, layoffs) %>%
+  pivot_wider(names_from = Year, values_from = layoffs, names_prefix = "layoffs_")
+
+layoffs_yr <- layoffs_yr %>%
+  select(sector, layoffs_2020, layoffs_2021, layoffs_2022, layoffs_2023, layoffs_2024, layoffs_2025)
+
+
+# Narrow down "majors" dataset (remove %chg cols)
+colnames(majors) <- gsub("[()]", "", colnames(majors))
+colnames(majors) <- gsub("-", "_", colnames(majors))
+
+majors_voc <- majors %>% 
+  filter(Award_Level_and_Institution_Type %in% c("Undergraduate PAB", "Undergraduate 2-year")) %>%
+  group_by(Major_Field_Family_2_digit_CIP_Title) %>%
+  select(Major_Field_Family_2_digit_CIP_Title, `2020_Enrollment`, `2021_Enrollment`, `2022_Enrollment`, `2023_Enrollment`, `2024_Enrollment`, `2025_Enrollment`) %>%
+  rename(enrollment_2020 = `2020_Enrollment`, enrollment_2021 = `2021_Enrollment`, enrollment_2022 = `2022_Enrollment`, enrollment_2023 = `2023_Enrollment`, enrollment_2024 = `2024_Enrollment`, enrollment_2025 = `2025_Enrollment`)
+
+```
+
+
+``` {r}
+# Compare unique values for sector/field names 
+u_sectors <- sort(unique(openings_yr$sector))
+u_majors <- sort(unique(majors_voc$Major_Field_Family_2_digit_CIP_Title))
+
+# Manual mapping from "match_df"
+# Used this for mapping: https://www.bls.gov/web/empsit/ceseeb1a.htm 
+
+# in sector: make private education and state education one thing called "education"
+openings_yr <- openings_yr %>%
+  mutate(sector = case_when(sector %in% c(
+    "private educational services", 
+    "state and local government education") ~ "education", TRUE ~ sector)) %>%
+  group_by(sector) %>%
+  summarise(across(everything(), sum, na.rm = TRUE))
+
+layoffs_yr <- layoffs_yr %>%
+  mutate(sector = case_when(sector %in% c("private educational services", "state and local government education") ~ "education", TRUE ~ sector))%>%
+  group_by(sector) %>%
+  summarise(across(everything(), sum, na.rm = TRUE))
+
+# in majors_voc: remove agriculture fields because sectors df is nonfarm from BLS
+majors_voc <- majors_voc %>% 
+  mutate(Major_Field_Family_2_digit_CIP_Title = str_trim(Major_Field_Family_2_digit_CIP_Title, side = "right")) %>%
+  group_by(Major_Field_Family_2_digit_CIP_Title) %>%
+  summarise(across(everything(), sum, na.rm = TRUE)) %>%
+  filter(!Major_Field_Family_2_digit_CIP_Title %in% c(
+    "Agriculture Agriculture Operations and Related Sciences", 
+    "High School/Secondary Diplomas and Certificates", 
+    "Multi/Interdisciplinary Studies", 
+    "CIP Missing", 
+    "Citizenship Activities")) %>%
+  rename(major_field = Major_Field_Family_2_digit_CIP_Title)
+
+```
+
+
+``` {r}
+
+# New col in majors df with mapped "sector"
+mapped_sector <- c(
+"Architecture and Related Services" = "professional business services",
+"Area Ethnic Cultural and Gender Studies" = "education",
+"Basic Skills" = "other services",
+"Biological and Biomedical Sciences" = "healthcare social assistance",
+"Business Management Marketing and Related Support" = "professional business services",
+"Citizenship Activities" = "federal",
+"Communication Journalism and Related Programs" = "information",
+"Communications Technologies/Technicians and Support Services" = "information", 
+"Computer and Information Sciences and Support Services" = "information",
+"Construction Trades" = "construction",
+"Education" = "education",
+"Engineering" = "manufacturing",
+"Engineering Technologies/Technicians" = "manufacturing",
+"English Language and Literature/Letters" = "information",
+"Family and Consumer Sciences/Human Sciences" = "healthcare social assistance",
+"Foreign Languages Literatures and Linguistics" = "education",
+"Health Professions and Related Clinical Sciences" = "healthcare social assistance",
+"Health-Related Knowledge and Skills" = "healthcare social assistance",
+"History" = "arts entertainment recreation",
+"Interpersonal and Social Skills" = "healthcare social assistance",
+"Legal Professions and Studies" = "professional business services",
+"Leisure and Recreational Activities" = "arts entertainment recreation",
+"Liberal Arts and Sciences General Studies and Humanities" = "information",
+"Library Science" = "information",
+"Mathematics and Statistics" = "finance and insurance",
+"Mechanic and Repair Technologies/Technicians" = "trade transportation utilities",
+"Military Technologies" = "federal",
+"Natural Resources and Conservation" = "other services",
+"Parks Recreation Leisure and Fitness Studies" = "arts entertainment recreation",
+"Personal and Culinary Services" = "accommodation food services",
+"Personal Awareness and Self-Improvement" = "other services",
+"Philosophy and Religious Studies" = "other services",
+"Physical Sciences" = "healthcare social assistance",
+"Precision Production" = "manufacturing",
+"Psychology" = "healthcare social assistance",
+"Public Administration and Social Service Professions" = "professional business services",
+"Reserve Officer Training Corps (JROTC ROTC)" = "federal",
+"Science Technologies/Technicians" = "professional business services",
+"Security and Protective Services" = "professional business services",
+"Social Sciences" = "healthcare social assistance",
+"Technology Education/Industrial Arts" = "manufacturing",
+"Theology and Religious Vocations" = "other services",
+"Transportation and Materials Moving" = "trade transportation utilities",
+"Visual and Performing Arts" = "arts entertainment recreation"
+)
+
+# Map values in majors_voc in new col "job_sector"
+majors_voc <- majors_voc %>% 
+  mutate(job_sector = mapped_sector[major_field]) %>%
+  pivot_longer(cols = starts_with("enrollment_"), names_to = "year", values_to = "enrollment", names_prefix = "enrollment_") %>%
+  mutate(year = as.character(year))
+  
+majors_voc <- majors_voc %>%
+  select(job_sector, year, enrollment) %>%
+  group_by(job_sector, year) %>%
+  summarise(enrollment = sum(enrollment, na.rm = TRUE))
+
+# get rid of sectors in openings/layoffs that dont have values in majors
+# Longer format for dfs
+openings_yr <- openings_yr %>%
+  filter(sector %in% majors_voc$job_sector) %>%
+  pivot_longer(cols = starts_with("openings_"), names_to = "year", values_to = "openings", names_prefix = "openings_") %>%
+  mutate(year = as.character(year))
+
+layoffs_yr <- layoffs_yr %>%
+  filter(sector %in% majors_voc$job_sector) %>%
+  pivot_longer(cols = starts_with("layoffs_"), names_to = "year", values_to = "layoffs", names_prefix = "layoffs_") %>%
+  mutate(year = as.character(year))
+
+```
+
+
+``` {r}
+
+# Subplots (line graphs) of vocational enrollment vs layoffs by sector
+sector <- unique(majors_voc$job_sector)
+
+enroll_layoff_line <- lapply(sector, function(s) {
+  
+  major_sector <- majors_voc %>% 
+    filter(job_sector == s)
+  layoffs_sector <- layoffs_yr %>%
+    filter(sector == s)
+  
+  plot_ly() %>%
+    add_trace(data = major_sector, x = ~year, y = ~enrollment, type = "scatter", mode = "lines+markers", name = "Enrollment", line = list(color = "orange"), marker = list(color = "orange"), showlegend = s == sector[1]) %>%
+    add_trace(data = layoffs_sector, x = ~year, y = ~layoffs, type = "scatter", mode = "lines+markers", name = "Layoffs", line = list(color = "purple"), marker = list(color = "purple"), showlegend = s == sector[1]) %>%
+    layout(title = s, xaxis = list(title = "Year"), yaxis = list(title = "Enrollment", side = "left"), yaxis2 = list(title = "Layoffs", overlaying = "y", side = "right"))
+})
+  
+ncol <- 3
+nrow <- ceiling(length(enroll_layoff_line)/ncol)
+grid <- subplot(enroll_layoff_line, nrows = nrow, shareX = TRUE, shareY = FALSE, titleY = FALSE, margin = 0.05)
+
+annotations <- list()
+
+for(i in seq_along(sector)) {
+  col_idx <- (i - 1) %% ncol
+  row_idx <- floor((i - 1) / ncol)
+  
+  x <- (col_idx + 0.5) / ncol
+  y <- 1 - (row_idx / nrow)
+  
+  annotations[[i]] <- list(x = x, y = y, text = sector[i], xref = "paper", yref = "paper", 
+                           showarrow = FALSE, xanchor = "center", yanchor = "bottom", font = list(size = 11))
+}
+
+grid <- grid %>% 
+  layout(annotations = annotations, xaxis = list(title = "Year"), yaxis = list(title = "Count"), title = "Number of Layoffs (in millions) and Number of Vocational School Enrollments (in thousands) by Sector")
+
+grid
+
+```
+
+
+``` {r}
+
+# Subplots (line graphs) of vocational enrollment vs openings by sector
+sector <- unique(majors_voc$job_sector)
+
+enroll_openings_line <- lapply(sector, function(s) {
+  
+  major_sector <- majors_voc %>% 
+    filter(job_sector == s)
+  openings_sector <- openings_yr %>%
+    filter(sector == s)
+  
+  plot_ly() %>%
+    add_trace(data = major_sector, x = ~year, y = ~enrollment, type = "scatter", mode = "lines+markers", name = "Enrollment", line = list(color = "orange"), marker = list(color = "orange"), showlegend = s == sector[1]) %>%
+    add_trace(data = openings_sector, x = ~year, y = ~openings, type = "scatter", mode = "lines+markers", name = "Openings", line = list(color = "purple"), marker = list(color = "purple"), showlegend = s == sector[1]) %>%
+    layout(title = s, xaxis = list(title = "Year"), yaxis = list(title = "Enrollment", side = "left"), yaxis2 = list(title = "Openings", overlaying = "y", side = "right"))
+})
+  
+ncol <- 3
+nrow <- ceiling(length(enroll_openings_line)/ncol)
+grid_o <- subplot(enroll_openings_line, nrows = nrow, shareX = TRUE, shareY = FALSE, titleY = FALSE, margin = 0.05)
+
+annotations <- list()
+
+for(i in seq_along(sector)) {
+  col_idx <- (i - 1) %% ncol
+  row_idx <- floor((i - 1) / ncol)
+  
+  x <- (col_idx + 0.5) / ncol
+  y <- 1 - (row_idx / nrow)
+  
+  annotations[[i]] <- list(x = x, y = y, text = sector[i], xref = "paper", yref = "paper", 
+                           showarrow = FALSE, xanchor = "center", yanchor = "bottom", font = list(size = 11))
+}
+
+grid_o <- grid_o %>% 
+  layout(annotations = annotations, xaxis = list(title = "Year"), yaxis = list(title = "Count"), title = "Number of Job Openings (in millions) and Number of Vocational School Enrollments (in thousands) by Sector")
+
+grid_o
+
+```
+
+``` {r}
+
+# Merge datasets: "layoffs_yr" and "majors_voc"
+merged_layoffs <- merge(layoffs_yr, majors_voc, by.x = c("sector", "year"), by.y = c("job_sector", "year"))
+
+merged_layoffs$sector <- as.factor(merged_layoffs$sector)
+
+# Linear regression
+layoffs_model <- lm(enrollment ~ layoffs * sector + year, data = merged_layoffs)
+summary(layoffs_model)
+
+# Check Residuals vs Fitted  for linearity and homoscedasticity
+par(mfrow=c(2,2))  
+plot(layoffs_model)
+
+# Check normality
+shapiro_res <- shapiro.test(residuals(layoffs_model))
+shapiro_res 
+# p-value is 0.01965; can reject null hypothesis, i.e. data doesn't has normality
+
+# Check multicolinearity
+vif_values <- vif(layoffs_model)
+vif_values
+# layoffs: 3.75 is okay/moderate | sector: 3.07 → okay/moderate | year: 1.37 → very low, no problem | layoffs:sector: 3.19 → okay/moderate
+# thus, multicolinearity is not a significant issue
+
+
+levels(merged_layoffs$sector)
+```
+
+###Interpretation: 
+For "layoffs," P-Value is ~0.11, which is greater than the significant value 0.05. Thus, we cannot reject the null hypothesis that there is an effect on enrollment numbers by layoffs. 
+
+When looking at individual sectors, we can see that only some sectors are influenced by layoffs. These include: "arts entertainment recreation," "federal," "healthcare social assistance," "information," "manufacturing," "professional business services, and "trade transportation utilities."
+
+
+``` {r}
+
+# Merge datasets: "layoffs_yr" and "majors_voc"
+merged_openings <- merge(openings_yr, majors_voc, by.x = c("sector", "year"), by.y = c("job_sector", "year"))
+
+merged_openings$sector <- as.factor(merged_openings$sector)
+
+# Linear regression
+openings_model <- lm(enrollment ~ openings * sector + year, data = merged_openings)
+summary(openings_model)
+
+# Check Residuals vs Fitted  for linearity and homoscedasticity
+par(mfrow=c(2,2))  
+plot(openings_model)
+
+# Check normality
+shapiro_res <- shapiro.test(residuals(openings_model))
+shapiro_res 
+# p-value is 1.66e-07; can reject null hypothesis, i.e. data does not have normality
+
+# Check multicolinearity
+vif_values <- vif(openings_model)
+vif_values
+# openings: 8.575311 is moderate-high multicolinearity | sector: 4.01 → okay/moderate | year: 1.25 → very low, no problem | openings:sector: 4.31 → okay/moderate
+# thus, multicolinearity could be an issue. since no variable is above 10, it's not a significant problem but "openings" might be related to other predictors.   
+
+```
+
+###Interpretation: 
+For "openings," P-Value is ~0.91, which is greater than the significant value 0.05. Thus, we cannot reject the null hypothesis that there is an effect on enrollment numbers by job openings.
+
+When looking at individual sectors, we can see that some sectors are influenced by layoffs, while others aren't. These include: 
+
+
+``` {r}
+
+# Box Plots
+layoffs_long <- merged_layoffs %>%
+  pivot_longer(cols = c(layoffs, enrollment),
+               names_to = "metric",
+               values_to = "value") %>%
+  filter(sector %in% c("arts entertainment recreation", "healthcare social assistance", "information", "manufacturing", "professional business services", "trade transportation utilities"))
+
+layoffs_box <- plot_ly() %>%
+  add_boxplot(data = subset(layoffs_long, metric == "layoffs"), x = ~sector, y = ~value, name = "Layoffs", marker = list(color = 'aquamarine'), boxpoints = FALSE) %>%
+  add_boxplot(data = subset(layoffs_long, metric == "enrollment"), x = ~sector, y = ~value, name = "Enrollment", marker = list(color = 'blue'), yaxis = "y2", boxpoints = FALSE) %>%
+  layout(title = "Layoffs vs Vocational Enrollments by Sector", xaxis = list(title = "Sector", tickangle = -45), yaxis = list(title = "Layoffs"), yaxis2 = list(title = "Enrollment", overlaying = "y", side = "right"))
+
+layoffs_box
+
+```
